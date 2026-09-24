@@ -51,6 +51,11 @@ idea/
 .idea/
 *.swp
 
+# Runtime data
+instance/
+__pycache__/
+*.pyc
+
 # OS Files
 .DS_Store
 Thumbs.db

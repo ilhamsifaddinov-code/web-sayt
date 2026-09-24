@@ -8,7 +8,7 @@ from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'logoped-nukus-secure-2026-key')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///logoped.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///logoped.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 6 * 1024 * 1024
@@ -409,7 +409,8 @@ def add_specialist():
     flash("Jańa qániyge qosıldı!", "success")
     return redirect(url_for('admin_panel'))
 
+with app.app_context():
+    seed_database()
+
 if __name__ == '__main__':
-    with app.app_context():
-        seed_database()
-    app.run(debug=True, port=5000)
+    app.run(debug=os.environ.get('FLASK_DEBUG', 'false').lower() == 'true', host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
