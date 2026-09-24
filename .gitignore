@@ -1,0 +1,56 @@
+# ==========================================
+# Logs and Runtime Data
+# ==========================================
+*.log
+logs/
+*.pid
+*.seed
+*.lock
+
+# ==========================================
+# Environment Variables & Secrets (CRITICAL)
+# ==========================================
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# ==========================================
+# Dependency Directories
+# ==========================================
+node_modules/
+jspm_packages/
+.venv/
+env/
+venv/
+ENV/
+.venv
+
+# ==========================================
+# Build & Output Folders
+# ==========================================
+dist/
+build/
+out/
+bin/
+obj/
+
+# ==========================================
+# IDE and System Files
+# ==========================================
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+.idea
+idea
+idea/
+.idea/
+*.swp
+
+# OS Files
+.DS_Store
+Thumbs.db
