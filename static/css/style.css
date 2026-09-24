@@ -1,0 +1,56 @@
+:root {
+  --primary-blue: #0284c7;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Plus Jakarta Sans", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.password-container {
+  position: relative;
+}
+
+.password-toggle-icon {
+  user-select: none;
+}
+
+.lucide {
+  stroke-width: 2px;
+  vertical-align: middle;
+}
+
+/* Nav Menu Animation Styles */
+#nav-indicator {
+  z-index: 0;
+  will-change: transform, width, opacity;
+}
+
+.nav-item {
+  z-index: 10;
+  position: relative;
+}
+
+.nav-item.active-nav, .nav-item:hover {
+  color: white !important;
+}
+
+.nav-item.active-nav i, .nav-item:hover i {
+  color: white !important;
+}
+
+/* Photo and Card Hover Enhancements */
+.hover-scale {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
+}
+.hover-scale:hover {
+  transform: scale(1.02);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+.img-hover-zoom {
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.group:hover .img-hover-zoom {
+  transform: scale(1.08);
+}

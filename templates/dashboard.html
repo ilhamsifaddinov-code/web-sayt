@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto mt-8 px-4">
+  <div class="flex items-center gap-3 mb-8">
+    <div class="w-12 h-12 bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 rounded-2xl flex items-center justify-center">
+      <i data-lucide="user" class="w-6 h-6"></i>
+    </div>
+    <div>
+      <h2 class="text-2xl font-black text-slate-900 dark:text-white" data-i18n="dash_title">Jeke Kabinet</h2>
+      <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="dash_sub">Bul jerde qániygelerge jazılasız hám rawajlanıw kártasın kóresiz.</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+    <div class="bg-white dark:bg-slate-800 rounded-[2rem] border border-slate-200 dark:border-slate-700 p-6 shadow-sm hover-scale">
+      <h3 class="text-base font-bold text-slate-800 dark:text-white mb-1 flex items-center gap-2"><i data-lucide="calendar-plus" class="w-5 h-5 text-sky-600"></i> <span data-i18n="dash_book_t">Qániyge qabılına jazılıw</span></h3>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mb-5" data-i18n="dash_book_s">Qániygeni hám sáneni tańlań.</p>
+
+      <form method="POST" action="{{ url_for('book_appointment') }}" class="space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 ml-1" data-i18n="dash_cname">Balanıń atı:</label>
+            <input type="text" name="child_name" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 ml-1" data-i18n="dash_cage">Balanıń jası:</label>
+            <input type="number" name="child_age" min="1" max="15" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 ml-1" data-i18n="dash_sel_sp">1. Qániygeni tańlań:</label>
+          <select name="specialist_id" id="booking-specialist-select" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-bold text-sky-700 dark:text-sky-300">
+            <option value="" disabled selected>-- Saylań --</option>
+            {% for sp in specialists %}
+              <option value="{{ sp.id }}">{{ sp.name }} - {{ "{:,.0f}".format(sp.price) }} so'm</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 ml-1" data-i18n="dash_sel_dt">2. Sáneni tańlań:</label>
+          <input type="date" name="date_str" id="booking-date-input" required min="{{ current_date }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 ml-1" data-i18n="dash_sel_tm">3. Bos waqıttı tańlań:</label>
+          <div id="available-slots-container" class="flex flex-wrap gap-2 mt-2">
+            <span class="text-xs text-slate-400 italic">Dáslep qániyge hám sáneni tańlań</span>
+          </div>
+          <input type="hidden" name="time_str" id="selected-slot-input" required>
+        </div>
+
+        <button type="submit" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-3.5 rounded-2xl mt-2 transition-all shadow-md active:scale-95">
+          <span data-i18n="dash_submit">Tastıyıqlaw hám Jazılıw</span>
+        </button>
+      </form>
+    </div>
+
+    <div class="space-y-8">
+      <div class="bg-white dark:bg-slate-800 rounded-[2rem] border border-emerald-200 dark:border-emerald-900/50 p-6 shadow-sm hover-scale">
+        <h3 class="text-sm font-bold text-slate-800 dark:text-white mb-1 flex items-center gap-2"><i data-lucide="trending-up" class="w-4 h-4 text-emerald-500"></i> <span data-i18n="dash_prog_t">Balanıń rawajlanıw kártası</span></h3>
+        <p class="text-[10px] text-slate-500 mb-4" data-i18n="dash_prog_s">Logoped tárepinen kiritilgen sabaq nátiyjeleri:</p>
+        
+        <div class="space-y-3">
+          {% for note in progress_notes %}
+            <div class="p-3 bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/30 rounded-2xl">
+              <div class="flex justify-between items-center mb-1.5">
+                <span class="font-bold text-xs text-slate-800 dark:text-slate-200">{{ note.child_name }}</span>
+                <span class="text-[10px] text-emerald-600">{{ note.created_at.strftime('%d.%m.%Y') }}</span>
+              </div>
+              <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-1.5"><span class="font-semibold">Nátiyje:</span> {{ note.note }}</p>
+              {% if note.homework %}
+                <p class="text-[11px] text-emerald-700 dark:text-emerald-400 bg-emerald-100/50 dark:bg-emerald-900/30 p-2 rounded-xl"><span class="font-bold">Úyge tapsırma:</span> {{ note.homework }}</p>
+              {% endif %}
+            </div>
+          {% else %}
+            <p class="text-xs text-slate-400 italic">Ele sabaq nátiyjeleri kiritilmegen.</p>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-slate-800 rounded-[2rem] border border-slate-200 dark:border-slate-700 p-6 shadow-sm hover-scale">
+        <h3 class="text-sm font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2"><i data-lucide="clock" class="w-4 h-4 text-sky-600"></i> <span data-i18n="dash_my_apps">Meniń qabıllarım</span></h3>
+        <div class="space-y-3">
+          {% for app in appointments %}
+            <div class="p-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl flex items-center justify-between">
+              <div>
+                <p class="font-bold text-xs text-slate-800 dark:text-white mb-0.5">{{ app.specialist.name }}</p>
+                <p class="text-[11px] text-slate-500 font-mono">{{ app.date_str }} | {{ app.time_str }}</p>
+              </div>
+              {% if app.status == 'Aktiv' %}
+                <form method="POST" action="{{ url_for('cancel_my_appointment', app_id=app.id) }}" onsubmit="return confirm('Qabıldı biykar etesiz be?');">
+                   <button type="submit" class="text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 p-1.5 rounded-lg transition-colors"><i data-lucide="x-circle" class="w-4 h-4"></i></button>
+                </form>
+              {% else %}
+                <span class="text-[10px] font-bold text-rose-500 bg-rose-50 dark:bg-rose-900/30 px-2 py-1 rounded">Biykar etildi</span>
+              {% endif %}
+            </div>
+          {% else %}
+             <p class="text-xs text-slate-400 italic">Sizde aktiv qabıllar joq.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto mt-8 px-4">
+  <div class="flex items-center gap-3 mb-8">
+    <div class="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-2xl flex items-center justify-center">
+      <i data-lucide="shield" class="w-6 h-6"></i>
+    </div>
+    <div>
+      <h2 class="text-2xl font-black text-slate-900 dark:text-white" data-i18n="admin_title">Logoped Orayı Basqarıw Paneli</h2>
+      <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="admin_sub">Qabıllar, vrachlarǵa kabinet ashıw, bahalar hám parollar.</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-4 hover-scale">
+      <div class="w-12 h-12 rounded-full bg-sky-50 dark:bg-sky-900/30 text-sky-600 flex items-center justify-center"><i data-lucide="users" class="w-5 h-5"></i></div>
+      <div>
+        <p class="text-[10px] uppercase font-bold text-slate-400" data-i18n="admin_u_count">Dizimnen ótken adamlar</p>
+        <p class="text-2xl font-black text-slate-800 dark:text-white">{{ users_count }}</p>
+      </div>
+    </div>
+    <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-4 hover-scale">
+      <div class="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center"><i data-lucide="calendar" class="w-5 h-5"></i></div>
+      <div>
+        <p class="text-[10px] uppercase font-bold text-slate-400" data-i18n="admin_a_count">Aktiv Qabıllar</p>
+        <p class="text-2xl font-black text-slate-800 dark:text-white">{{ active_apps_count }}</p>
+      </div>
+    </div>
+    <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-4 hover-scale">
+      <div class="w-12 h-12 rounded-full bg-purple-50 dark:bg-purple-900/30 text-purple-600 flex items-center justify-center"><i data-lucide="stethoscope" class="w-5 h-5"></i></div>
+      <div>
+        <p class="text-[10px] uppercase font-bold text-slate-400" data-i18n="admin_s_count">Barlıq Vrachlar</p>
+        <p class="text-2xl font-black text-slate-800 dark:text-white">{{ specialists|length }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+    <!-- Foydalanıwshı & Vrach Parolların Ózgertiw (TÁZE) -->
+    <div class="bg-white dark:bg-slate-800 rounded-[2rem] border border-rose-200 dark:border-rose-900/50 p-6 shadow-sm hover-scale">
+      <h3 class="text-sm font-bold text-slate-800 dark:text-white mb-1 flex items-center gap-2"><i data-lucide="key" class="w-4 h-4 text-rose-500"></i> <span data-i18n="admin_cred_t">Foydalanıwshı & Vrach Parolların Ózgertiw</span></h3>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mb-4" data-i18n="admin_cred_s">Eski parol kórinbeydi, biraq jańa parol ornata alasız.</p>
+      <form method="POST" action="{{ url_for('admin_update_user') }}" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 ml-1" data-i18n="admin_cred_sel">Adamdı tańlań:</label>
+          <select name="target_user_id" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs">
+            {% for u in users %}
+              <option value="{{ u.id }}">{{ u.full_name }} (@{{ u.username }}) - {{ u.role|capitalize }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 ml-1" data-i18n="reg_login">Jańa Login (qálewge qaray):</label>
+            <input type="text" name="new_username" placeholder="Jańa login..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 ml-1" data-i18n="reg_pass">Jańa Parol (qálewge qaray):</label>
+            <input type="text" name="new_password" placeholder="Jańa parol..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs">
+          </div>
+        </div>
+        <button type="submit" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-xl text-xs transition-all active:scale-95 shadow-sm">
+          <span data-i18n="admin_cred_btn">Jańalaw</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- Vrachqa Jeke Kabinet Jaratıw -->
+    <div class="bg-white dark:bg-slate-800 rounded-[2rem] border border-emerald-200 dark:border-emerald-900/50 p-6 shadow-sm hover-scale">
+      <h3 class="text-sm font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2"><i data-lucide="user-check" class="w-4 h-4 text-emerald-500"></i> <span data-i18n="admin_sp_cab">Vrachqa Jeke Kabinet Jaratıw</span></h3>
+      <form method="POST" action="{{ url_for('create_specialist_account') }}" class="space-y-4">
+        <select name="specialist_id" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs">
+          {% for sp in specialists %}
+            <option value="{{ sp.id }}">{{ sp.name }}</option>
+          {% endfor %}
+        </select>
+        <div class="grid grid-cols-2 gap-3">
+          <input type="text" name="username" placeholder="Login (username)" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs lowercase">
+          <input type="text" name="password" placeholder="Parol" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs">
+        </div>
+        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition-all active:scale-95 shadow-sm">Kabinet ashıw</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+    <!-- Jańa Qániyge (Vrach) Qosıw -->
+    <div class="bg-white dark:bg-slate-800 rounded-[2rem] border border-sky-200 dark:border-sky-900/50 p-6 shadow-sm hover-scale">
+      <h3 class="text-sm font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2"><i data-lucide="plus-circle" class="w-4 h-4 text-sky-500"></i> <span data-i18n="admin_sp_add">Jańa Qániyge (Vrach) Qosıw</span></h3>
+      <form method="POST" action="{{ url_for('add_specialist') }}" class="space-y-4">
+        <input type="text" name="name" placeholder="Atı-familiyası" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs">
+        <div class="grid grid-cols-2 gap-3">
+          <input type="number" name="age" placeholder="Jası (ms: 30)" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs">
+          <input type="text" name="experience" placeholder="Tájiriybesi (ms: 5 jıl)" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <input type="number" name="success_rate" placeholder="Nátiyje % (ms: 95)" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs">
+          <input type="number" name="price" placeholder="Qabıl bahası" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs">
+        </div>
+        <input type="text" name="image_url" placeholder="Súwret URL mánzili (májbúriy emes)" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs">
+        <textarea name="description" placeholder="Maǵlıwmat..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs"></textarea>
+        <button type="submit" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-2.5 rounded-xl text-xs transition-all active:scale-95 shadow-sm" data-i18n="admin_sp_add_btn">Qosıw</button>
+      </form>
+    </div>
+
+    <!-- Vrachlardı Basqarıw -->
+    <div class="bg-white dark:bg-slate-800 rounded-[2rem] border border-slate-200 dark:border-slate-700 p-6 shadow-sm hover-scale">
+        <h3 class="text-sm font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2"><i data-lucide="stethoscope" class="w-4 h-4 text-purple-600"></i> <span data-i18n="admin_sp_mng">Vrachlardı Basqarıw</span></h3>
+        <div class="overflow-y-auto max-h-[300px]">
+            <table class="w-full text-left text-xs">
+                <thead>
+                    <tr class="text-slate-400 border-b border-slate-200 dark:border-slate-700">
+                        <th class="pb-3 font-semibold">Atı</th>
+                        <th class="pb-3 font-semibold">Baha</th>
+                        <th class="pb-3 font-semibold text-center" data-i18n="admin_sp_del">Hákeket</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50">
+                    {% for sp in specialists %}
+                    {% if sp.is_active %}
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td class="py-3 font-bold text-slate-700 dark:text-slate-200">{{ sp.name }}</td>
+                        <td class="py-3">
+                            <form method="POST" action="{{ url_for('update_price', specialist_id=sp.id) }}" class="flex items-center gap-1">
+                                <input type="number" name="price" value="{{ sp.price }}" class="w-20 px-2 py-1 rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-[10px]">
+                                <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1.5 rounded text-[10px] font-bold transition-all"><i data-lucide="save" class="w-3 h-3"></i></button>
+                            </form>
+                        </td>
+                        <td class="py-3 text-center">
+                            <form method="POST" action="{{ url_for('delete_specialist', specialist_id=sp.id) }}" onsubmit="return confirm('Ras menen óshiresiz be?');">
+                                <button type="submit" class="text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 p-1.5 rounded-lg transition-colors"><i data-lucide="trash-2" class="w-4 h-4 mx-auto"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+  </div>
+
+  <div class="bg-white dark:bg-slate-800 rounded-[2rem] border border-slate-200 dark:border-slate-700 p-6 shadow-sm mb-8">
+    <h3 class="text-sm font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2"><i data-lucide="list-ordered" class="w-4 h-4 text-sky-600"></i> <span data-i18n="admin_tbl_t">Barlıq Qabıllar Dizimi</span></h3>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs">
+        <thead>
+          <tr class="text-slate-400 border-b border-slate-200 dark:border-slate-700">
+            <th class="pb-3 font-semibold">ID</th>
+            <th class="pb-3 font-semibold">Ata-ana (Login)</th>
+            <th class="pb-3 font-semibold">Bala & Jas</th>
+            <th class="pb-3 font-semibold">Telefon</th>
+            <th class="pb-3 font-semibold">Qániyge</th>
+            <th class="pb-3 font-semibold">Waqıt</th>
+            <th class="pb-3 font-semibold">Status</th>
+            <th class="pb-3 font-semibold">Hákeket</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50">
+          {% for app in appointments %}
+          <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+            <td class="py-3 font-mono text-slate-500">#{{ app.id }}</td>
+            <td class="py-3 font-bold text-slate-700 dark:text-slate-200">{{ app.user.full_name }} <br><span class="text-[10px] text-sky-600">@{{ app.user.username }}</span></td>
+            <td class="py-3 text-slate-600 dark:text-slate-300">{{ app.child_name }} ({{ app.child_age }})</td>
+            <td class="py-3 text-slate-600 dark:text-slate-300 font-mono">{{ app.phone }}</td>
+            <td class="py-3 text-slate-600 dark:text-slate-300">{{ app.specialist.name }}</td>
+            <td class="py-3">
+              <span class="bg-sky-50 dark:bg-slate-700 text-sky-700 dark:text-sky-300 px-2.5 py-1 rounded-md font-bold whitespace-nowrap">{{ app.date_str }} | {{ app.time_str }}</span>
+            </td>
+            <td class="py-3">
+              {% if app.status == 'Aktiv' %}
+                <span class="text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded font-bold">Aktiv</span>
+              {% else %}
+                <span class="text-rose-600 bg-rose-50 dark:bg-rose-900/30 px-2 py-1 rounded font-bold">Biykar etildi</span>
+              {% endif %}
+            </td>
+            <td class="py-3">
+              {% if app.status == 'Aktiv' %}
+              <form method="POST" action="{{ url_for('admin_cancel_appointment', app_id=app.id) }}" onsubmit="return confirm('Biykar etiwdi qáleysiz be?');">
+                <button type="submit" class="text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 p-1.5 rounded-lg transition-colors"><i data-lucide="x-circle" class="w-4 h-4"></i></button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="kaa" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Nókis Logoped Orayı — Balalardıń anıq hám ráwan sóylewi{% endblock %}</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: {} }
+    }
+    if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+    }
+  </script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="bg-[#f5f5f7] dark:bg-slate-900 text-slate-900 dark:text-slate-100 flex flex-col min-h-screen pb-20 md:pb-0 transition-colors duration-300">
+
+  <!-- FLOATING WIDGET (GLOBE 🌐 LOGOTIPI HÁM TILLER) -->
+  <aside aria-label="Quick Settings" class="fixed bottom-24 right-4 md:bottom-6 md:right-6 z-[100] flex flex-col items-end gap-3 select-none">
+    
+    <div class="relative group">
+      <button id="globe-trigger-btn" type="button" aria-label="Tildi ózgertiw"
+              class="w-12 h-12 rounded-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-2xl text-sky-600 dark:text-sky-400 shadow-2xl border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center hover:scale-110 active:scale-95 transition-all">
+        <i data-lucide="globe" class="w-6 h-6"></i>
+      </button>
+
+      <div id="lang-dropdown-menu" class="hidden group-hover:md:flex flex-col gap-1.5 absolute bottom-14 right-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-2xl border border-slate-200/80 dark:border-slate-700/80 p-2 rounded-2xl shadow-2xl min-w-[150px] transition-all animate-in fade-in zoom-in-95">
+        <button type="button" data-lang="qr" class="lang-option-btn text-left px-3 py-2 rounded-xl text-xs flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+          <span class="font-black text-[10px] bg-sky-100 dark:bg-sky-900/60 text-sky-700 dark:text-sky-300 px-1.5 py-0.5 rounded">QR</span> Qaraqalpaqsha
+        </button>
+        <button type="button" data-lang="uz" class="lang-option-btn text-left px-3 py-2 rounded-xl text-xs flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+          <span>🇺🇿</span> O'zbekcha
+        </button>
+        <button type="button" data-lang="ru" class="lang-option-btn text-left px-3 py-2 rounded-xl text-xs flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+          <span>🇷🇺</span> Русский
+        </button>
+        <button type="button" data-lang="en" class="lang-option-btn text-left px-3 py-2 rounded-xl text-xs flex items-center gap-2 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+          <span>🇬🇧</span> English
+        </button>
+      </div>
+    </div>
+
+    <!-- Ay / Quyash -->
+    <button id="theme-toggle" type="button" aria-label="Temanı ózgertiw"
+            class="w-12 h-12 rounded-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-2xl text-slate-800 dark:text-amber-400 shadow-2xl border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform">
+      <i id="theme-toggle-dark-icon" data-lucide="moon" class="w-5 h-5 hidden"></i>
+      <i id="theme-toggle-light-icon" data-lucide="sun" class="w-5 h-5 hidden"></i>
+    </button>
+  </aside>
+
+  <!-- iOS STILINDEGI BAS MENYU -->
+  <header class="sticky top-0 md:top-3 z-50 px-0 md:px-4 max-w-7xl mx-auto w-full">
+    <div class="bg-white/85 dark:bg-slate-800/85 backdrop-blur-2xl border border-slate-200/60 dark:border-slate-700/60 rounded-none md:rounded-full px-4 py-3 md:py-2.5 flex items-center justify-between shadow-sm md:shadow-lg">
+      
+      <a href="{{ url_for('index') }}" class="flex items-center gap-2.5 pl-2">
+        <div class="w-9 h-9 rounded-full bg-sky-600 flex items-center justify-center text-white shadow-sm">
+          <i data-lucide="message-circle" class="w-5 h-5"></i>
+        </div>
+        <div class="leading-none">
+          <span class="font-extrabold text-sm tracking-tight text-slate-900 dark:text-white block">LOGOPED NÓKIS</span>
+          <span class="text-[10px] font-semibold text-sky-600 dark:text-sky-400">Professional Oray</span>
+        </div>
+      </a>
+
+      <!-- Desktop iOS Menyu with Animation Pill -->
+      <nav id="desktop-nav" class="relative hidden md:flex items-center bg-slate-100/70 dark:bg-slate-700/70 p-1 rounded-full text-xs font-semibold border border-slate-200/50 dark:border-slate-600/50">
+        <div id="nav-indicator" class="absolute left-0 top-0 bg-sky-500 rounded-full transition-all duration-300 ease-out pointer-events-none opacity-0"></div>
+        <a href="{{ url_for('index') }}#specialists" class="nav-item px-3.5 py-1.5 rounded-full flex items-center gap-1.5 text-slate-600 dark:text-slate-200 transition-colors duration-300">
+          <i data-lucide="users" class="w-4 h-4 text-emerald-600 dark:text-emerald-400"></i> <span data-i18n="nav_specialists">Qániygeler</span>
+        </a>
+        <a href="{{ url_for('index') }}#services" class="nav-item px-3.5 py-1.5 rounded-full flex items-center gap-1.5 text-slate-600 dark:text-slate-200 transition-colors duration-300">
+          <i data-lucide="sparkles" class="w-4 h-4 text-sky-600 dark:text-sky-400"></i> <span data-i18n="nav_services">Xızmetler</span>
+        </a>
+        <a href="{{ url_for('index') }}#reviews" class="nav-item px-3.5 py-1.5 rounded-full flex items-center gap-1.5 text-slate-600 dark:text-slate-200 transition-colors duration-300">
+          <i data-lucide="star" class="w-4 h-4 text-amber-500"></i> <span data-i18n="nav_reviews">Pikirler</span>
+        </a>
+        <a href="{{ url_for('chat') }}" class="nav-item px-3.5 py-1.5 rounded-full flex items-center gap-1.5 text-sky-700 dark:text-sky-400 font-bold transition-colors duration-300">
+          <i data-lucide="messages-square" class="w-4 h-4 text-sky-600 dark:text-sky-400"></i> <span data-i18n="nav_chat">Jeke Chat</span>
+        </a>
+      </nav>
+
+      <!-- Auth Bólimi -->
+      <div class="flex items-center gap-2 pr-1">
+        {% if current_user.is_authenticated %}
+          <a href="{{ url_for('dashboard') }}" class="bg-sky-50 dark:bg-slate-700 text-sky-700 dark:text-sky-300 font-bold px-4 py-2 rounded-full text-xs flex items-center gap-1.5 transition-colors border border-sky-200 dark:border-slate-600 shadow-sm">
+            <i data-lucide="user" class="w-4 h-4"></i> <span data-i18n="nav_cabinet">Kabinet</span>
+          </a>
+          {% if current_user.role == 'admin' %}
+            <a href="{{ url_for('admin_panel') }}" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-3.5 py-2 rounded-full text-xs flex items-center gap-1 shadow-sm">
+              <i data-lucide="shield" class="w-3.5 h-3.5"></i> Admin
+            </a>
+          {% endif %}
+          <a href="{{ url_for('logout') }}" title="Shıǵıw" class="text-slate-400 dark:text-slate-500 hover:text-rose-600 dark:hover:text-rose-500 p-2 transition-colors">
+            <i data-lucide="log-out" class="w-4 h-4"></i>
+          </a>
+        {% else %}
+          <a href="{{ url_for('login') }}" class="font-bold text-xs px-3.5 py-2 text-slate-700 dark:text-slate-200 hover:text-sky-600 dark:hover:text-sky-400 transition-colors" data-i18n="nav_login">Kiriw</a>
+          <a href="{{ url_for('register') }}" class="bg-sky-600 hover:bg-sky-700 text-white font-bold px-4 py-2 rounded-full text-xs transition-all shadow-sm active:scale-95" data-i18n="nav_register">Dizimnen ótiw</a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobil iOS Tómengi Tab-Bar -->
+  <div class="md:hidden fixed bottom-0 left-0 right-0 z-[90] bg-white/90 dark:bg-slate-800/90 backdrop-blur-2xl border-t border-slate-200 dark:border-slate-700 px-4 py-2 flex justify-around items-center text-[10px] font-semibold text-slate-500 dark:text-slate-400 shadow-lg">
+    <a href="{{ url_for('index') }}" class="flex flex-col items-center gap-1 hover:text-sky-600 dark:hover:text-sky-400 transition-colors">
+      <i data-lucide="home" class="w-5 h-5"></i> <span data-i18n="mob_home">Tiykarǵı</span>
+    </a>
+    <a href="{{ url_for('index') }}#specialists" class="flex flex-col items-center gap-1 hover:text-sky-600 dark:hover:text-sky-400 transition-colors">
+      <i data-lucide="users" class="w-5 h-5"></i> <span data-i18n="mob_specs">Qániygeler</span>
+    </a>
+    <a href="{% if current_user.is_authenticated %}{{ url_for('dashboard') }}{% else %}{{ url_for('login') }}{% endif %}" class="flex flex-col items-center gap-1 text-sky-600 dark:text-sky-400 font-bold">
+      <div class="w-10 h-10 rounded-full bg-sky-600 text-white flex items-center justify-center -mt-5 shadow-lg border-4 border-[#f5f5f7] dark:border-slate-900 transition-colors">
+        <i data-lucide="calendar" class="w-5 h-5"></i>
+      </div>
+      <span data-i18n="mob_cab">Kabinet</span>
+    </a>
+    <a href="{{ url_for('chat') }}" class="flex flex-col items-center gap-1 hover:text-sky-600 dark:hover:text-sky-400 transition-colors">
+      <i data-lucide="message-circle" class="w-5 h-5"></i> <span data-i18n="mob_chat">Chat</span>
+    </a>
+  </div>
+
+  <main class="flex-grow w-full">
+    <div class="max-w-7xl mx-auto px-4 mt-4 w-full">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="p-3.5 mb-3 rounded-2xl text-xs font-bold flex items-center justify-between shadow-sm bg-sky-50 dark:bg-sky-900/30 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
+              <span class="flex items-center gap-2"><i data-lucide="info" class="w-4 h-4"></i> {{ message }}</span>
+              <button onclick="this.parentElement.remove()" class="hover:opacity-70 text-base">&times;</button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+    </div>
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 py-10 mt-16 text-slate-500 dark:text-slate-400 text-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div>
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-7 h-7 rounded-full bg-sky-600 flex items-center justify-center text-white">
+            <i data-lucide="message-square" class="w-4 h-4"></i>
+          </div>
+          <span class="font-bold text-slate-800 dark:text-white text-sm">Nókis Logoped Orayı</span>
+        </div>
+        <p data-i18n="footer_desc">Balańız anıq hám ráwan sóylewdi biz benen birge úyrensin.</p>
+      </div>
+      <div>
+        <h4 class="font-bold text-slate-800 dark:text-white mb-2" data-i18n="footer_addr_t">Mánzil & Baylanıs</h4>
+        <p class="flex items-center gap-1.5"><i data-lucide="map-pin" class="w-3.5 h-3.5 text-sky-600"></i> <span data-i18n="footer_addr">Nókis qalası, 45-jay</span></p>
+        <p class="mt-1.5 flex items-center gap-1.5"><i data-lucide="phone" class="w-3.5 h-3.5 text-sky-600"></i> <span data-i18n="footer_phone">+998 90 123-45-67</span></p>
+      </div>
+      <div>
+        <h4 class="font-bold text-slate-800 dark:text-white mb-2" data-i18n="footer_quick_t">Tezkor Siltemeler</h4>
+        <ul class="space-y-1.5">
+          <li><a href="{{ url_for('register') }}" class="hover:text-sky-600 dark:hover:text-sky-400" data-i18n="footer_discount">Dizimnen ótiw</a></li>
+          <li><a href="{{ url_for('login') }}" class="hover:text-sky-600 dark:hover:text-sky-400" data-i18n="footer_cabinet_link">Jeke kabinetke kiriw</a></li>
+        </ul>
+      </div>
+    </div>
+  </footer>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
