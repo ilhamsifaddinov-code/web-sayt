@@ -136,8 +136,8 @@ def seed_database():
     if Specialist.query.count() == 0:
         s1 = Specialist(name="Dilnoza Alimbetova", age=32, experience="8 jıl", success_rate=95, price=50000, image="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=600", description="Duduqlanıw hám tutıǵıw yamasa al-analıq waqtındaǵı logopedik xızmet.")
         s2 = Specialist(name="Rustam Joldasbaev", age=38, experience="12 jıl", success_rate=98, price=70000, image="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=600", description="Keshikken sóylewdi rawajlandırıw, autizm belgileri bar balalar menen islesiw.")
-        s3 = Specialist(name="Aygul Turemuratova", age=29, experience="5 jıl", success_rate=92, price=45000, image="https://images.unsplash.com/photo-1594824432258-f446051515bb?w=600", description="Artikulyaciyalıq gimnastika, 'R' hám 'L' háriplerin anıq aytıwdı úyretiw.")
-        s4 = Specialist(name="Zarina Qıdırbaeva", age=35, experience="10 jıl", success_rate=96, price=60000, image="https://images.unsplash.com/photo-1527613426496-2287d6b820bb?w=600", description="Kishi jastaǵı balalarda sóylew qorqınıshın jeńiw hám logonevrozdi emlew.")
+        s3 = Specialist(name="Aygul Turemuratova", age=29, experience="5 jıl", success_rate=92, price=45000, image="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRn5NNkGjYrMy-f7QSfWKJ9SgrNCD6YU736tPBt5zXRwmXUa6JZS3Zlrbo&s=10", description="Artikulyaciyalıq gimnastika, 'R' hám 'L' háriplerin anıq aytıwdı úyretiw.")
+        s4 = Specialist(name="Zarina Qıdırbaeva", age=35, experience="10 jıl", success_rate=96, price=60000, image="https://media.gettyimages.com/id/1301595548/photo/female-doctor-stock-photo.jpg?s=612x612&w=gi&k=20&c=uYSCSyeDaG4DLyvV8SrPES0u-u6JjMG-pFgDMHqAEoc=", description="Kishi jastaǵı balalarda sóylew qorqınıshın jeńiw hám logonevrozdi emlew.")
         db.session.add_all([s1, s2, s3, s4])
     db.session.commit()
 
