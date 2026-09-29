@@ -1,0 +1,27 @@
+databases:
+  - name: web-sayt-db
+    databaseName: web_sayt
+    user: web_sayt_user
+    plan: free
+    postgresVersion: "16"
+
+services:
+  - type: web
+    name: web-sayt
+    runtime: python
+    plan: free
+    region: frankfurt
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 4
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.8"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: web-sayt-db
+          property: connectionString

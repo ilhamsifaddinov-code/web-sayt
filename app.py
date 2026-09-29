@@ -1,4 +1,5 @@
 import os
+import time
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
@@ -7,13 +8,34 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'logoped-nukus-secure-2026-key')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///logoped.db')
+
+def _database_uri():
+    uri = os.environ.get('DATABASE_URL')
+    if not uri:
+        return 'sqlite:///logoped.db'
+    if '://' in uri:
+        scheme, rest = uri.split('://', 1)
+        if scheme.split('+', 1)[0] in ('postgres', 'postgresql'):
+            uri = 'postgresql+psycopg://' + rest
+            if 'connect_timeout' not in uri:
+                uri += ('&' if '?' in uri else '?') + 'connect_timeout=10'
+    return uri
+
+_secret = os.environ.get('SECRET_KEY')
+if not _secret:
+    _secret = 'logoped-nukus-secure-2026-key'
+
+app.config['SECRET_KEY'] = _secret
+app.config['SQLALCHEMY_DATABASE_URI'] = _database_uri()
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_pre_ping': True, 'pool_recycle': 280}
 app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 6 * 1024 * 1024
 
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+try:
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+except OSError:
+    pass
 
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
@@ -109,7 +131,7 @@ def seed_database():
     admin = User.query.filter_by(username='admin').first()
     if not admin:
         admin = User(username='admin', full_name='Oray Administratorı', role='admin', phone="+998 90 123 45 67")
-        admin.set_password('admin123')
+        admin.set_password(os.environ.get('ADMIN_PASSWORD', 'admin123'))
         db.session.add(admin)
     if Specialist.query.count() == 0:
         s1 = Specialist(name="Dilnoza Alimbetova", age=32, experience="8 jıl", success_rate=95, price=50000, image="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=600", description="Duduqlanıw hám tutıǵıw yamasa al-analıq waqtındaǵı logopedik xızmet.")
@@ -409,8 +431,23 @@ def add_specialist():
     flash("Jańa qániyge qosıldı!", "success")
     return redirect(url_for('admin_panel'))
 
-with app.app_context():
-    seed_database()
+def init_database(retries=5, delay=3):
+    for attempt in range(1, retries + 1):
+        try:
+            with app.app_context():
+                seed_database()
+            return
+        except Exception as exc:
+            app.logger.warning('DB init failed (attempt %s/%s): %s', attempt, retries, exc)
+            if attempt == retries:
+                raise
+            time.sleep(delay)
+
+@app.route('/health')
+def health():
+    return jsonify({'status': 'ok'}), 200
+
+init_database()
 
 if __name__ == '__main__':
     app.run(debug=os.environ.get('FLASK_DEBUG', 'false').lower() == 'true', host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))

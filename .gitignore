@@ -53,6 +53,8 @@ idea/
 
 # Runtime data
 instance/
+*.db
+*.sqlite3
 __pycache__/
 *.pyc
 
