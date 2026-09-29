@@ -1,63 +1,138 @@
-# ==========================================
-# Logs and Runtime Data
-# ==========================================
-*.log
-logs/
-*.pid
-*.seed
-*.lock
+# --- OPERATSION TIZIMLAR ---
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
 
-# ==========================================
-# Environment Variables & Secrets (CRITICAL)
-# ==========================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.VolumeIcon.icns
+.com.apple.timemachine.donotbackup
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+
+# --- DASTURLASH MUHARRIRLARI (IDEs) ---
+# Visual Studio Code
+.vscode/
+!.vscode/extensions.json
+*.code-workspace
+
+# JetBrains (IntelliJ, WebStorm, PyCharm va boshqalar)
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Sublime Text / Eclipse
+*.sublime-project
+*.sublime-workspace
+.metadata/
+.classpath
+.project
+.settings/
+
+
+# --- XAVFSIZLIK VA ATROF-MUHIT (ENV) ---
+# Maxfiy ma'lumotlar va kalitlar hech qachon Git'ga tushmasligi kerak
 .env
 .env.local
-.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
 *.pem
 *.key
+*.secret
+*.passwd
 
-# ==========================================
-# Dependency Directories
-# ==========================================
+
+# --- NODE.JS / JAVASCRIPT ---
 node_modules/
 jspm_packages/
-.venv/
-env/
-venv/
-ENV/
-.venv
-
-# ==========================================
-# Build & Output Folders
-# ==========================================
+.npm/
+.eslintcache
+.stylelintcache
+.next/
+.nuxt/
+.vuepress/dist
 dist/
 build/
 out/
-bin/
-obj/
+.docusaurus/
+.cache/
 
-# ==========================================
-# IDE and System Files
-# ==========================================
-.vscode/
-.idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-.idea
-idea
-idea/
-.idea/
-*.swp
 
-# Runtime data
-instance/
-*.db
-*.sqlite3
+# --- PYTHON ---
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.env/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.toast
+.spyderproject
+.ropeproject
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+.toml
 
-# OS Files
-.DS_Store
-Thumbs.db
+
+# --- JAVA / MAVEN / GRADLE ---
+*.class
+*.log
+*.ctxt
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+target/
+.gradle/
+build/
+
+
+# --- PHP / COMPOSER / LARAVEL ---
+vendor/
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+.vagrant/
+storage/*.key
+/public/storage
+/public/hot
+/public/mix-manifest.json
+
+
+# --- LOGLAR VA KESH ---
+*.log
+logs/
+*.gz
+*.bak
+*.swp
+*.tmp
+.sass-cache/
