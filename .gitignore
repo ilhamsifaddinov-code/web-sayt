@@ -59,6 +59,10 @@ $RECYCLE.BIN/
 *.secret
 *.passwd
 
+# Yuklangan fayllar
+static/uploads/*
+!static/uploads/.gitkeep
+
 
 # --- NODE.JS / JAVASCRIPT ---
 node_modules/

@@ -1,18 +1,24 @@
 import os
 import time
+import base64
 from datetime import datetime
+from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
+load_dotenv()
+
 app = Flask(__name__)
+
+DEFAULT_DATABASE_URL = "postgresql://neondb_owner:npg_kvnVEr0zLgN6@ep-empty-term-bd9lpjlr-pooler.c-8.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
 
 def _database_uri():
     uri = os.environ.get('DATABASE_URL')
-    if not uri:
-        return 'sqlite:///logoped.db'
+    if not uri or uri.strip() == '' or uri.startswith('sqlite'):
+        uri = DEFAULT_DATABASE_URL
     if '://' in uri:
         scheme, rest = uri.split('://', 1)
         if scheme.split('+', 1)[0] in ('postgres', 'postgresql'):
@@ -30,12 +36,49 @@ app.config['SQLALCHEMY_DATABASE_URI'] = _database_uri()
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'pool_pre_ping': True, 'pool_recycle': 280}
 app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
-app.config['MAX_CONTENT_LENGTH'] = 6 * 1024 * 1024
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
 try:
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 except OSError:
     pass
+
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def process_specialist_image(file_obj, url_str, fallback='https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=600'):
+    if file_obj and file_obj.filename and allowed_file(file_obj.filename):
+        filename = secure_filename(file_obj.filename)
+        ext = filename.rsplit('.', 1)[1].lower()
+        mime_map = {
+            'jpg': 'image/jpeg',
+            'jpeg': 'image/jpeg',
+            'png': 'image/png',
+            'webp': 'image/webp',
+            'gif': 'image/gif',
+            'svg': 'image/svg+xml'
+        }
+        mime = mime_map.get(ext, 'image/jpeg')
+        file_bytes = file_obj.read()
+        
+        try:
+            unique_name = f"{int(time.time())}_{filename}"
+            upload_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_name)
+            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+            with open(upload_path, 'wb') as f:
+                f.write(file_bytes)
+        except Exception as e:
+            app.logger.warning('Failed to save to local uploads: %s', e)
+
+        b64_str = base64.b64encode(file_bytes).decode('utf-8')
+        return f"data:{mime};base64,{b64_str}"
+
+    if url_str and url_str.strip():
+        return url_str.strip()
+
+    return fallback
 
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
@@ -67,7 +110,7 @@ class Specialist(db.Model):
     experience = db.Column(db.String(50), nullable=False)
     success_rate = db.Column(db.Integer, nullable=False)
     price = db.Column(db.Float, nullable=False)
-    image = db.Column(db.String(500), default='default.png')
+    image = db.Column(db.Text, default='https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=600')
     description = db.Column(db.Text, nullable=True)
     is_active = db.Column(db.Boolean, default=True)
 
@@ -120,7 +163,7 @@ class Setting(db.Model):
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
 
 STANDARD_SLOTS = ["09:00 - 10:00", "10:00 - 11:00", "11:00 - 12:00", "14:00 - 15:00", "15:00 - 16:00", "16:00 - 17:00", "17:00 - 18:00"]
 
@@ -159,6 +202,10 @@ def register():
         phone_number = request.form.get('phone_number', '').strip()
         password = request.form.get('password', '').strip()
         phone = f"{country_code} {phone_number}"
+
+        if not username or not password or not full_name:
+            flash("Barlıq maydanlardı toltırıń!", "warning")
+            return redirect(url_for('register'))
 
         if User.query.filter_by(username=username).first():
             flash("Bul login bánt! Basqa login tańlań.", "warning")
@@ -219,18 +266,29 @@ def available_slots(specialist_id, date_str):
 @login_required
 def book_appointment():
     specialist_id = request.form.get('specialist_id')
-    child_name = request.form.get('child_name')
+    child_name = request.form.get('child_name', '').strip()
     child_age = request.form.get('child_age')
-    date_str = request.form.get('date_str')
-    time_str = request.form.get('time_str')
+    date_str = request.form.get('date_str', '').strip()
+    time_str = request.form.get('time_str', '').strip()
 
-    if Appointment.query.filter_by(specialist_id=specialist_id, date_str=date_str, time_str=time_str, status='Aktiv').first():
+    if not specialist_id or not child_name or not date_str or not time_str:
+        flash("Barlıq maydanlardı toltırıń!", "warning")
+        return redirect(url_for('dashboard'))
+
+    try:
+        sp_id = int(specialist_id)
+        age = int(child_age) if child_age else 4
+    except ValueError:
+        flash("Nadurıs maǵlıwmat kiritildi!", "danger")
+        return redirect(url_for('dashboard'))
+
+    if Appointment.query.filter_by(specialist_id=sp_id, date_str=date_str, time_str=time_str, status='Aktiv').first():
         flash("Bul waqıt bánt!", "warning")
         return redirect(url_for('dashboard'))
 
     app_obj = Appointment(
-        user_id=current_user.id, specialist_id=specialist_id,
-        child_name=child_name, child_age=int(child_age) if child_age else 4,
+        user_id=current_user.id, specialist_id=sp_id,
+        child_name=child_name, child_age=age,
         phone=current_user.phone or "Kiritilmegen",
         date_str=date_str, time_str=time_str, status='Aktiv'
     )
@@ -271,12 +329,12 @@ def chat():
     elif current_user.role == 'specialist':
         admin = User.query.filter_by(role='admin').first()
         my_users_ids = [a.user_id for a in Appointment.query.filter_by(specialist_id=current_user.specialist_id).all()]
-        my_users = User.query.filter(User.id.in_(my_users_ids)).all()
+        my_users = User.query.filter(User.id.in_(my_users_ids)).all() if my_users_ids else []
         contact_users = [admin] + my_users if admin else my_users
     else:
         admin = User.query.filter_by(role='admin').first()
         my_sp_ids = [a.specialist_id for a in Appointment.query.filter_by(user_id=current_user.id).all()]
-        my_sp_users = User.query.filter(User.specialist_id.in_(my_sp_ids)).all()
+        my_sp_users = User.query.filter(User.specialist_id.in_(my_sp_ids)).all() if my_sp_ids else []
         contact_users = [admin] + my_sp_users if admin else my_sp_users
 
     contact_users = list({u.id: u for u in contact_users if u is not None}.values())
@@ -295,7 +353,7 @@ def chat():
     active_chat_user = None
     messages = []
     if selected_user_id and int(selected_user_id) in [u.id for u in contact_users]:
-        active_chat_user = User.query.get(int(selected_user_id))
+        active_chat_user = db.session.get(User, int(selected_user_id))
         messages = ChatMessage.query.filter(
             ((ChatMessage.sender_id == current_user.id) & (ChatMessage.receiver_id == active_chat_user.id)) |
             ((ChatMessage.sender_id == active_chat_user.id) & (ChatMessage.receiver_id == current_user.id))
@@ -333,7 +391,7 @@ def admin_panel():
 @login_required
 def admin_cancel_appointment(app_id):
     if current_user.role != 'admin': return redirect(url_for('index'))
-    app_item = Appointment.query.get_or_404(app_id)
+    app_item = db.get_or_404(Appointment, app_id)
     app_item.status = 'Biykar etildi'
     db.session.commit()
     flash("Qabıl biykar etildi.", "info")
@@ -346,7 +404,10 @@ def create_specialist_account():
     sp_id = request.form.get('specialist_id')
     username = request.form.get('username', '').strip()
     password = request.form.get('password', '').strip()
-    sp = Specialist.query.get(sp_id)
+    sp = db.session.get(Specialist, int(sp_id)) if sp_id else None
+    if not sp:
+        flash("Qániyge tabılmadı!", "warning")
+        return redirect(url_for('admin_panel'))
     if User.query.filter_by(username=username).first():
         flash("Login bánt!", "warning")
         return redirect(url_for('admin_panel'))
@@ -365,7 +426,7 @@ def admin_update_user():
     new_username = request.form.get('new_username', '').strip()
     new_password = request.form.get('new_password', '').strip()
     
-    usr = User.query.get(target_id)
+    usr = db.session.get(User, int(target_id)) if target_id else None
     if usr:
         if new_username: usr.username = new_username
         if new_password: usr.set_password(new_password)
@@ -377,7 +438,7 @@ def admin_update_user():
 @login_required
 def delete_review(rev_id):
     if current_user.role != 'admin': return redirect(url_for('index'))
-    rev = Review.query.get_or_404(rev_id)
+    rev = db.get_or_404(Review, rev_id)
     db.session.delete(rev)
     db.session.commit()
     flash("Pikir óshirildi.", "info")
@@ -398,7 +459,7 @@ def toggle_reviews():
 def update_price(specialist_id):
     if current_user.role != 'admin': return redirect(url_for('index'))
     new_price = float(request.form.get('price', 50000))
-    sp = Specialist.query.get_or_404(specialist_id)
+    sp = db.get_or_404(Specialist, specialist_id)
     sp.price = new_price
     db.session.commit()
     flash("Baha jańalandı!", "success")
@@ -408,7 +469,7 @@ def update_price(specialist_id):
 @login_required
 def delete_specialist(specialist_id):
     if current_user.role != 'admin': return redirect(url_for('index'))
-    sp = Specialist.query.get_or_404(specialist_id)
+    sp = db.get_or_404(Specialist, specialist_id)
     sp.is_active = False
     db.session.commit()
     flash("Vrach óshirildi.", "info")
@@ -418,17 +479,79 @@ def delete_specialist(specialist_id):
 @login_required
 def add_specialist():
     if current_user.role != 'admin': return redirect(url_for('index'))
-    name = request.form.get('name')
+    name = request.form.get('name', '').strip()
     age = int(request.form.get('age', 30))
-    experience = request.form.get('experience')
+    experience = request.form.get('experience', '').strip()
     success_rate = int(request.form.get('success_rate', 95))
     price = float(request.form.get('price', 50000))
-    image_url = request.form.get('image_url')
-    description = request.form.get('description', '')
-    new_sp = Specialist(name=name, age=age, experience=experience, success_rate=success_rate, price=price, image=image_url or "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=600", description=description)
+    description = request.form.get('description', '').strip()
+    
+    image_file = request.files.get('image_file')
+    image_url = request.form.get('image_url', '').strip()
+    image = process_specialist_image(image_file, image_url)
+    
+    new_sp = Specialist(
+        name=name,
+        age=age,
+        experience=experience,
+        success_rate=success_rate,
+        price=price,
+        image=image,
+        description=description
+    )
     db.session.add(new_sp)
     db.session.commit()
     flash("Jańa qániyge qosıldı!", "success")
+    return redirect(url_for('admin_panel'))
+
+@app.route('/admin/update-specialist/<int:specialist_id>', methods=['POST'])
+@login_required
+def update_specialist(specialist_id):
+    if current_user.role != 'admin': return redirect(url_for('index'))
+    sp = db.get_or_404(Specialist, specialist_id)
+    
+    name = request.form.get('name', '').strip()
+    if name:
+        sp.name = name
+    
+    age = request.form.get('age')
+    if age:
+        try:
+            sp.age = int(age)
+        except ValueError:
+            pass
+        
+    experience = request.form.get('experience', '').strip()
+    if experience:
+        sp.experience = experience
+        
+    success_rate = request.form.get('success_rate')
+    if success_rate:
+        try:
+            sp.success_rate = int(success_rate)
+        except ValueError:
+            pass
+        
+    price = request.form.get('price')
+    if price:
+        try:
+            sp.price = float(price)
+        except ValueError:
+            pass
+        
+    description = request.form.get('description')
+    if description is not None:
+        sp.description = description.strip()
+        
+    image_file = request.files.get('image_file')
+    image_url = request.form.get('image_url', '').strip()
+    
+    new_image = process_specialist_image(image_file, image_url, fallback=None)
+    if new_image:
+        sp.image = new_image
+        
+    db.session.commit()
+    flash("Qániyge maǵlıwmatları jańalandı!", "success")
     return redirect(url_for('admin_panel'))
 
 def init_database(retries=5, delay=3):

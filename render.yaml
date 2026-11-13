@@ -1,10 +1,3 @@
-databases:
-  - name: web-sayt-db
-    databaseName: web_sayt
-    user: web_sayt_user
-    plan: free
-    postgresVersion: "16"
-
 services:
   - type: web
     name: web-sayt
@@ -22,6 +15,4 @@ services:
       - key: ADMIN_PASSWORD
         sync: false
       - key: DATABASE_URL
-        fromDatabase:
-          name: web-sayt-db
-          property: connectionString
+        value: postgresql://neondb_owner:npg_kvnVEr0zLgN6@ep-empty-term-bd9lpjlr-pooler.c-8.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require

@@ -209,6 +209,12 @@ document.addEventListener("DOMContentLoaded", function () {
       admin_sp_mng: "Vrachlardı Basqarıw (Baha hám Óshiriw)",
       admin_sp_del: "Hákeket",
       admin_sp_save: "Saqlaw",
+      admin_sp_img_t: "Qániyge súwreti (Rasm):",
+      admin_sp_img_file: "1. Laptop / Kompyuterden súwret tańlaw:",
+      admin_sp_or: "yamasa",
+      admin_sp_img_url: "2. Internetten súwret URL mánzili:",
+      admin_sp_img_ready: "Súwret tańlandı",
+      admin_sp_edit_title: "Qániyge maǵlıwmatların ózgertiw",
     },
     uz: {
       nav_specialists: "Mutaxassislar",
@@ -317,6 +323,12 @@ document.addEventListener("DOMContentLoaded", function () {
       admin_sp_mng: "Vrachlarni Boshqarish",
       admin_sp_del: "Harakat",
       admin_sp_save: "Saqlash",
+      admin_sp_img_t: "Mutaxassis rasmi:",
+      admin_sp_img_file: "1. Laptop / Kompyuterdan rasm tanlash:",
+      admin_sp_or: "yoki",
+      admin_sp_img_url: "2. Internetdan rasm URL manzili:",
+      admin_sp_img_ready: "Rasm tanlandi",
+      admin_sp_edit_title: "Mutaxassis ma'lumotlarini o'zgartirish",
     },
     ru: {
       nav_specialists: "Специалисты",
@@ -425,6 +437,12 @@ document.addEventListener("DOMContentLoaded", function () {
       admin_sp_mng: "Управление Врачами",
       admin_sp_del: "Действие",
       admin_sp_save: "Сохранить",
+      admin_sp_img_t: "Фото специалиста:",
+      admin_sp_img_file: "1. Выбрать фото с ноутбука / компьютера:",
+      admin_sp_or: "или",
+      admin_sp_img_url: "2. URL адрес фото из интернета:",
+      admin_sp_img_ready: "Фото выбрано",
+      admin_sp_edit_title: "Редактировать данные специалиста",
     },
     en: {
       nav_specialists: "Specialists",
@@ -533,6 +551,12 @@ document.addEventListener("DOMContentLoaded", function () {
       admin_sp_mng: "Manage Doctors",
       admin_sp_del: "Action",
       admin_sp_save: "Save",
+      admin_sp_img_t: "Specialist Photo:",
+      admin_sp_img_file: "1. Upload photo from laptop / computer:",
+      admin_sp_or: "or",
+      admin_sp_img_url: "2. Photo URL from the internet:",
+      admin_sp_img_ready: "Photo selected",
+      admin_sp_edit_title: "Edit Specialist Details",
     }
   };
 
