@@ -32,24 +32,31 @@
         <div>
           <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 ml-1" data-i18n="dash_sel_sp">1. Qániygeni tańlań:</label>
           <select name="specialist_id" id="booking-specialist-select" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-bold text-sky-700 dark:text-sky-300">
-            <option value="" disabled selected>-- Saylań --</option>
+            <option value="" disabled {% if not selected_sp_id %}selected{% endif %}>-- Saylań --</option>
             {% for sp in specialists %}
-              <option value="{{ sp.id }}">{{ sp.name }} - {{ "{:,.0f}".format(sp.price) }} so'm</option>
+              <option value="{{ sp.id }}" {% if selected_sp_id == sp.id %}selected{% endif %}>{{ sp.name }} - {{ "{:,.0f}".format(sp.price) }} so'm</option>
             {% endfor %}
           </select>
         </div>
 
         <div>
           <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 ml-1" data-i18n="dash_sel_dt">2. Sáneni tańlań:</label>
-          <input type="date" name="date_str" id="booking-date-input" required min="{{ current_date }}" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs">
+          <input type="date" name="date_str" id="booking-date-input" value="{{ current_date }}" min="{{ current_date }}" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-xs">
         </div>
 
         <div>
           <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 ml-1" data-i18n="dash_sel_tm">3. Bos waqıttı tańlań:</label>
           <div id="available-slots-container" class="flex flex-wrap gap-2 mt-2">
-            <span class="text-xs text-slate-400 italic">Dáslep qániyge hám sáneni tańlań</span>
+            {% for slot in standard_slots %}
+              <button type="button" class="slot-pill px-3.5 py-2 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:border-sky-500 hover:text-sky-600 dark:hover:text-sky-400 transition-all cursor-pointer shadow-sm active:scale-95" data-slot="{{ slot }}">
+                {{ slot }}
+              </button>
+            {% endfor %}
           </div>
-          <input type="hidden" name="time_str" id="selected-slot-input" required>
+          <p id="slot-selected-msg" class="text-xs text-emerald-600 dark:text-emerald-400 font-bold mt-2.5 hidden flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/30 p-2.5 rounded-xl border border-emerald-200 dark:border-emerald-800">
+            <i data-lucide="check-circle" class="w-4 h-4 text-emerald-600"></i> Tańlanǵan waqıt: <span id="slot-selected-text" class="font-mono underline"></span>
+          </p>
+          <input type="hidden" name="time_str" id="selected-slot-input">
         </div>
 
         <button type="submit" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-3.5 rounded-2xl mt-2 transition-all shadow-md active:scale-95">
@@ -106,4 +113,86 @@
     </div>
   </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const spSelect = document.getElementById('booking-specialist-select');
+  const dateInput = document.getElementById('booking-date-input');
+  const slotsContainer = document.getElementById('available-slots-container');
+  const slotInput = document.getElementById('selected-slot-input');
+  const slotMsg = document.getElementById('slot-selected-msg');
+  const slotText = document.getElementById('slot-selected-text');
+  const form = document.querySelector('form[action*="book-appointment"]');
+
+  function initSlotButtons() {
+    const pills = slotsContainer.querySelectorAll('.slot-pill:not([disabled])');
+    pills.forEach(pill => {
+      pill.onclick = function() {
+        pills.forEach(p => {
+          p.classList.remove('bg-sky-600', 'text-white', 'border-sky-600', 'shadow-md', 'scale-105');
+          p.classList.add('bg-slate-50', 'dark:bg-slate-900', 'text-slate-700', 'dark:text-slate-300', 'border-slate-200', 'dark:border-slate-700');
+        });
+        this.classList.remove('bg-slate-50', 'dark:bg-slate-900', 'text-slate-700', 'dark:text-slate-300', 'border-slate-200', 'dark:border-slate-700');
+        this.classList.add('bg-sky-600', 'text-white', 'border-sky-600', 'shadow-md', 'scale-105');
+        slotInput.value = this.dataset.slot;
+        if (slotMsg && slotText) {
+          slotText.textContent = this.dataset.slot;
+          slotMsg.classList.remove('hidden');
+          slotMsg.classList.add('flex');
+        }
+      };
+    });
+  }
+
+  function refreshSlots() {
+    if (!spSelect || !dateInput) return;
+    const spId = spSelect.value;
+    const dateVal = dateInput.value;
+    slotInput.value = '';
+    if (slotMsg) {
+      slotMsg.classList.add('hidden');
+      slotMsg.classList.remove('flex');
+    }
+
+    if (!spId || !dateVal) return;
+
+    fetch('/api/available-slots/' + spId + '/' + dateVal)
+      .then(res => res.json())
+      .then(data => {
+        const booked = data.booked_slots || [];
+        
+        slotsContainer.querySelectorAll('.slot-pill').forEach(pill => {
+          const slotName = pill.dataset.slot;
+          if (booked.includes(slotName)) {
+            pill.disabled = true;
+            pill.classList.add('opacity-40', 'line-through', 'cursor-not-allowed', 'bg-slate-100', 'dark:bg-slate-800');
+            pill.classList.remove('bg-sky-600', 'text-white', 'border-sky-600', 'hover:border-sky-500');
+            pill.title = 'Bul waqıt bánt';
+          } else {
+            pill.disabled = false;
+            pill.classList.remove('opacity-40', 'line-through', 'cursor-not-allowed', 'bg-slate-100', 'dark:bg-slate-800', 'bg-sky-600', 'text-white');
+            pill.classList.add('bg-slate-50', 'dark:bg-slate-900', 'text-slate-700', 'dark:text-slate-300', 'border-slate-200', 'dark:border-slate-700');
+            pill.title = '';
+          }
+        });
+        initSlotButtons();
+      })
+      .catch(err => console.error('Slots error:', err));
+  }
+
+  initSlotButtons();
+  if (spSelect) spSelect.addEventListener('change', refreshSlots);
+  if (dateInput) dateInput.addEventListener('change', refreshSlots);
+  if (spSelect && spSelect.value) refreshSlots();
+
+  if (form) {
+    form.addEventListener('submit', function(e) {
+      if (!slotInput.value) {
+        e.preventDefault();
+        alert('Iltimas, qabıl waqtın (bos waqıtlardan birin) tańlań!');
+      }
+    });
+  }
+});
+</script>
 {% endblock %}

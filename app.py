@@ -252,15 +252,25 @@ def dashboard():
     specialists = Specialist.query.filter_by(is_active=True).all()
     user_appointments = Appointment.query.filter_by(user_id=current_user.id).order_by(Appointment.id.desc()).all()
     progress_notes = Progress.query.filter_by(user_id=current_user.id).order_by(Progress.id.desc()).all()
-    return render_template('dashboard.html', specialists=specialists, appointments=user_appointments, progress_notes=progress_notes, standard_slots=STANDARD_SLOTS)
+    today_str = datetime.utcnow().strftime('%Y-%m-%d')
+    selected_sp_id = request.args.get('specialist_id', type=int)
+    return render_template(
+        'dashboard.html',
+        specialists=specialists,
+        appointments=user_appointments,
+        progress_notes=progress_notes,
+        standard_slots=STANDARD_SLOTS,
+        current_date=today_str,
+        selected_sp_id=selected_sp_id
+    )
 
 @app.route('/api/available-slots/<int:specialist_id>/<date_str>')
 @login_required
 def available_slots(specialist_id, date_str):
     booked = Appointment.query.filter_by(specialist_id=specialist_id, date_str=date_str, status='Aktiv').all()
-    booked_times = [app.time_str for app in booked]
+    booked_times = [a.time_str for a in booked]
     available = [slot for slot in STANDARD_SLOTS if slot not in booked_times]
-    return jsonify({"available_slots": available})
+    return jsonify({"available_slots": available, "booked_slots": booked_times})
 
 @app.route('/book-appointment', methods=['POST'])
 @login_required

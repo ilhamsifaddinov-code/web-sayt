@@ -177,11 +177,11 @@
                         </td>
                         <td class="py-2.5 text-center">
                             <div class="flex items-center justify-center gap-1">
-                                <button type="button" onclick="openEditModal({{ sp.id }}, {{ sp.name|tojson }}, {{ sp.age }}, {{ sp.experience|tojson }}, {{ sp.success_rate }}, {{ sp.price }}, {{ sp.image|tojson }}, {{ (sp.description or '')|tojson }})" title="Ózgertiw" class="text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-900/30 p-1.5 rounded-lg transition-colors">
+                                <button type="button" data-id="{{ sp.id }}" title="Ózgertiw" class="btn-edit-sp text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-900/30 p-1.5 rounded-lg transition-colors cursor-pointer">
                                     <i data-lucide="edit-3" class="w-4 h-4"></i>
                                 </button>
                                 <form method="POST" action="{{ url_for('delete_specialist', specialist_id=sp.id) }}" onsubmit="return confirm('Ras menen óshiresiz be?');">
-                                    <button type="submit" title="Óshiriw" class="text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 p-1.5 rounded-lg transition-colors">
+                                    <button type="submit" title="Óshiriw" class="text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 p-1.5 rounded-lg transition-colors cursor-pointer">
                                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                                     </button>
                                 </form>
@@ -246,14 +246,14 @@
 </div>
 
 <!-- Modal: Qániyge maǵlıwmatların hám súwretin ózgertiw -->
-<div id="editSpecialistModal" class="fixed inset-0 z-[110] hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+<div id="editSpecialistModal" class="fixed inset-0 z-[110] hidden bg-black/60 backdrop-blur-sm items-center justify-center p-4">
   <div class="bg-white dark:bg-slate-800 rounded-3xl max-w-lg w-full p-6 border border-slate-200 dark:border-slate-700 shadow-2xl animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
     <div class="flex items-center justify-between mb-4">
       <h4 class="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
         <i data-lucide="edit" class="w-4 h-4 text-sky-500"></i>
         <span data-i18n="admin_sp_edit_title">Qániyge maǵlıwmatların ózgertiw</span>
       </h4>
-      <button type="button" onclick="closeEditModal()" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center font-bold text-lg">&times;</button>
+      <button type="button" onclick="closeEditModal()" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center font-bold text-lg cursor-pointer">&times;</button>
     </div>
     
     <form id="editSpecialistForm" method="POST" action="" enctype="multipart/form-data" class="space-y-3">
@@ -309,8 +309,8 @@
       </div>
 
       <div class="flex items-center justify-end gap-2 pt-2">
-        <button type="button" onclick="closeEditModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">Biykar etiw</button>
-        <button type="submit" class="bg-sky-600 hover:bg-sky-700 text-white font-bold px-5 py-2 rounded-xl text-xs shadow-sm active:scale-95 transition-all">Saqlaw</button>
+        <button type="button" onclick="closeEditModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer">Biykar etiw</button>
+        <button type="submit" class="bg-sky-600 hover:bg-sky-700 text-white font-bold px-5 py-2 rounded-xl text-xs shadow-sm active:scale-95 transition-all cursor-pointer">Saqlaw</button>
       </div>
     </form>
   </div>
@@ -352,6 +352,33 @@
     });
   }
 
+  // Specialists map for safe editing without inline quote problems
+  const specialistsMap = {
+    {% for sp in specialists %}
+    "{{ sp.id }}": {
+      id: {{ sp.id }},
+      name: {{ sp.name|tojson }},
+      age: {{ sp.age }},
+      experience: {{ sp.experience|tojson }},
+      success_rate: {{ sp.success_rate }},
+      price: {{ sp.price }},
+      image: {{ sp.image|tojson }},
+      description: {{ (sp.description or '')|tojson }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  };
+
+  document.querySelectorAll('.btn-edit-sp').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      const id = this.getAttribute('data-id');
+      const sp = specialistsMap[id];
+      if (sp) {
+        openEditModal(sp.id, sp.name, sp.age, sp.experience, sp.success_rate, sp.price, sp.image, sp.description);
+      }
+    });
+  });
+
   // Edit specialist modal functions
   function openEditModal(id, name, age, experience, success_rate, price, image, description) {
     const modal = document.getElementById('editSpecialistModal');
@@ -367,15 +394,32 @@
     document.getElementById('edit_sp_description').value = description || '';
     document.getElementById('edit_sp_current_preview').src = image || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=600';
     document.getElementById('edit_sp_image_url').value = (image && !image.startsWith('data:')) ? image : '';
+    const fileInput = document.getElementById('edit_sp_image_file');
+    if (fileInput) fileInput.value = '';
 
     modal.classList.remove('hidden');
+    modal.classList.add('flex');
     if (window.lucide) window.lucide.createIcons();
   }
 
   function closeEditModal() {
     const modal = document.getElementById('editSpecialistModal');
-    if (modal) modal.classList.add('hidden');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
   }
+
+  const editModalEl = document.getElementById('editSpecialistModal');
+  if (editModalEl) {
+    editModalEl.addEventListener('click', function(e) {
+      if (e.target === editModalEl) closeEditModal();
+    });
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeEditModal();
+  });
 
   const editSpFile = document.getElementById('edit_sp_image_file');
   const editSpUrl = document.getElementById('edit_sp_image_url');
