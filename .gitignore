@@ -140,3 +140,5 @@ logs/
 *.swp
 *.tmp
 .sass-cache/
+.vercel
+.env*
