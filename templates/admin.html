@@ -224,17 +224,22 @@
               <span class="bg-sky-50 dark:bg-slate-700 text-sky-700 dark:text-sky-300 px-2.5 py-1 rounded-md font-bold whitespace-nowrap">{{ app.date_str }} | {{ app.time_str }}</span>
             </td>
             <td class="py-3">
-              {% if app.status == 'Aktiv' %}
-                <span class="text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded font-bold">Aktiv</span>
-              {% else %}
-                <span class="text-rose-600 bg-rose-50 dark:bg-rose-900/30 px-2 py-1 rounded font-bold">Biykar etildi</span>
-              {% endif %}
+              <form method="POST" action="{{ url_for('update_appointment_status', app_id=app.id) }}">
+                <select name="status" onchange="this.form.submit()" class="text-[11px] font-bold rounded-lg px-2.5 py-1 border cursor-pointer focus:outline-none {% if app.status == 'Nátiyjeli juwmaqlandı' %}bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800{% elif app.status == 'Aktiv' %}bg-sky-50 text-sky-700 border-sky-300 dark:bg-sky-950/40 dark:text-sky-400 dark:border-sky-800{% elif app.status == 'Kelmadi' %}bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800{% else %}bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-800{% endif %}">
+                  <option value="Aktiv" {% if app.status == 'Aktiv' %}selected{% endif %}>Aktiv</option>
+                  <option value="Nátiyjeli juwmaqlandı" {% if app.status == 'Nátiyjeli juwmaqlandı' %}selected{% endif %}>✓ Nátiyjeli juwmaqlandı</option>
+                  <option value="Kelmadi" {% if app.status == 'Kelmadi' %}selected{% endif %}>Kelmadi</option>
+                  <option value="Biykar etildi" {% if app.status == 'Biykar etildi' %}selected{% endif %}>Biykar etildi</option>
+                </select>
+              </form>
             </td>
             <td class="py-3">
               {% if app.status == 'Aktiv' %}
               <form method="POST" action="{{ url_for('admin_cancel_appointment', app_id=app.id) }}" onsubmit="return confirm('Biykar etiwdi qáleysiz be?');">
-                <button type="submit" class="text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 p-1.5 rounded-lg transition-colors"><i data-lucide="x-circle" class="w-4 h-4"></i></button>
+                <button type="submit" title="Biykar etiw" class="text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/30 p-1.5 rounded-lg transition-colors"><i data-lucide="x-circle" class="w-4 h-4"></i></button>
               </form>
+              {% else %}
+                <span class="text-slate-400 text-[10px]">—</span>
               {% endif %}
             </td>
           </tr>

@@ -1,7 +1,7 @@
 import os
 import time
 import base64
-from datetime import datetime
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
@@ -152,6 +152,7 @@ class ChatMessage(db.Model):
     sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     message = db.Column(db.Text, nullable=False)
+    is_read = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     sender = db.relationship('User', foreign_keys=[sender_id])
     receiver = db.relationship('User', foreign_keys=[receiver_id])
@@ -169,6 +170,11 @@ STANDARD_SLOTS = ["09:00 - 10:00", "10:00 - 11:00", "11:00 - 12:00", "14:00 - 15
 
 def seed_database():
     db.create_all()
+    try:
+        db.session.execute(db.text("ALTER TABLE chat_message ADD COLUMN IF NOT EXISTS is_read BOOLEAN DEFAULT FALSE;"))
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
     if not Setting.query.filter_by(key='reviews_active').first():
         db.session.add(Setting(key='reviews_active', value='true'))
     admin = User.query.filter_by(username='admin').first()
@@ -211,6 +217,38 @@ def seed_database():
         db.session.add_all([r1, r2, r3])
 
     db.session.commit()
+
+def auto_update_expired_appointments():
+    try:
+        local_now = datetime.utcnow() + timedelta(hours=5)
+        today_date_str = local_now.strftime('%Y-%m-%d')
+        current_hm = local_now.strftime('%H:%M')
+
+        active_apps = Appointment.query.filter_by(status='Aktiv').all()
+        updated = False
+        for a in active_apps:
+            if a.date_str < today_date_str:
+                a.status = 'Nátiyjeli juwmaqlandı'
+                updated = True
+            elif a.date_str == today_date_str:
+                end_time = a.time_str.split('-')[-1].strip() if '-' in a.time_str else a.time_str.strip()
+                if end_time <= current_hm:
+                    a.status = 'Nátiyjeli juwmaqlandı'
+                    updated = True
+        if updated:
+            db.session.commit()
+    except Exception as e:
+        app.logger.warning("Auto update expired appointments error: %s", e)
+
+@app.context_processor
+def inject_global_data():
+    unread_count = 0
+    if current_user.is_authenticated:
+        try:
+            unread_count = ChatMessage.query.filter_by(receiver_id=current_user.id, is_read=False).count()
+        except Exception:
+            unread_count = 0
+    return {'total_unread_chats': unread_count}
 
 @app.route('/')
 def index():
@@ -305,10 +343,11 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
+    auto_update_expired_appointments()
     if current_user.role == 'admin': return redirect(url_for('admin_panel'))
     if current_user.role == 'specialist':
         my_appointments = Appointment.query.filter_by(specialist_id=current_user.specialist_id).order_by(Appointment.date_str.desc()).all()
-        unique_clients = {app.user_id: app for app in my_appointments if app.status == 'Aktiv'}.values()
+        unique_clients = {app.user_id: app for app in my_appointments if app.status in ('Aktiv', 'Nátiyjeli juwmaqlandı')}.values()
         return render_template('dashboard_specialist.html', appointments=my_appointments, clients=unique_clients)
     
     specialists = Specialist.query.filter_by(is_active=True).all()
@@ -340,11 +379,11 @@ def book_appointment():
     specialist_id = request.form.get('specialist_id')
     child_name = request.form.get('child_name', '').strip()
     child_age = request.form.get('child_age')
-    date_str = request.form.get('date_str', '').strip()
     time_str = request.form.get('time_str', '').strip()
+    booking_type = request.form.get('booking_type', 'single') # 'single', 'weekly', 'monthly'
 
-    if not specialist_id or not child_name or not date_str or not time_str:
-        flash("Barlıq maydanlardı toltırıń!", "warning")
+    if not specialist_id or not child_name or not time_str:
+        flash("Barlıq kerekli maydanlardı toltırıń!", "warning")
         return redirect(url_for('dashboard'))
 
     try:
@@ -354,20 +393,134 @@ def book_appointment():
         flash("Nadurıs maǵlıwmat kiritildi!", "danger")
         return redirect(url_for('dashboard'))
 
-    if Appointment.query.filter_by(specialist_id=sp_id, date_str=date_str, time_str=time_str, status='Aktiv').first():
-        flash("Bul waqıt bánt!", "warning")
+    target_specialist = db.session.get(Specialist, sp_id)
+    if not target_specialist or not target_specialist.is_active:
+        flash("Tańlanǵan qániyge aktiv emes!", "danger")
         return redirect(url_for('dashboard'))
 
-    app_obj = Appointment(
-        user_id=current_user.id, specialist_id=sp_id,
-        child_name=child_name, child_age=age,
-        phone=current_user.phone or "Kiritilmegen",
-        date_str=date_str, time_str=time_str, status='Aktiv'
-    )
-    db.session.add(app_obj)
+    target_dates = []
+    if booking_type == 'single':
+        date_str = request.form.get('date_str', '').strip()
+        if not date_str:
+            flash("Qabıl sánesin tańlań!", "warning")
+            return redirect(url_for('dashboard'))
+        target_dates = [date_str]
+    elif booking_type in ('weekly', 'monthly'):
+        start_date_str = request.form.get('start_date', '').strip() or request.form.get('date_str', '').strip()
+        selected_days = request.form.getlist('days_of_week')
+        if not start_date_str:
+            start_date_str = (datetime.utcnow() + timedelta(hours=5)).strftime('%Y-%m-%d')
+        if not selected_days:
+            flash("Iltimas, hápte kúnlerinen keminde birin tańlań!", "warning")
+            return redirect(url_for('dashboard'))
+
+        try:
+            start_dt = datetime.strptime(start_date_str, '%Y-%m-%d')
+        except ValueError:
+            flash("Nadurıs baslanıw sánesi!", "danger")
+            return redirect(url_for('dashboard'))
+
+        total_days = 7 if booking_type == 'weekly' else 30
+        int_days = [int(x) for x in selected_days if x.isdigit()]
+        for i in range(total_days):
+            d = start_dt + timedelta(days=i)
+            if d.weekday() in int_days:
+                target_dates.append(d.strftime('%Y-%m-%d'))
+
+        if not target_dates:
+            flash("Tańlanǵan hápte kúnleri boyınsha sáneler tabılmadı!", "warning")
+            return redirect(url_for('dashboard'))
+
+    # Conflict check across all target dates for requested specialist
+    conflicting_apps = Appointment.query.filter(
+        Appointment.specialist_id == sp_id,
+        Appointment.time_str == time_str,
+        Appointment.status == 'Aktiv',
+        Appointment.date_str.in_(target_dates)
+    ).all()
+
+    if conflicting_apps:
+        conflict_dates = sorted(list(set(a.date_str for a in conflicting_apps)))
+        # Search for alternative active specialists who are free on ALL target_dates at time_str
+        other_specialists = Specialist.query.filter(
+            Specialist.id != sp_id,
+            Specialist.is_active == True
+        ).all()
+
+        alternative_specialists = []
+        for other_sp in other_specialists:
+            other_conflict_count = Appointment.query.filter(
+                Appointment.specialist_id == other_sp.id,
+                Appointment.time_str == time_str,
+                Appointment.status == 'Aktiv',
+                Appointment.date_str.in_(target_dates)
+            ).count()
+            if other_conflict_count == 0:
+                alternative_specialists.append(other_sp)
+
+        conflict_str = ", ".join(conflict_dates)
+        if alternative_specialists:
+            alt_list = ", ".join([f"{s.name} ({s.price:,.0f} so'm)" for s in alternative_specialists])
+            flash(
+                f"Qániyge {target_specialist.name} {time_str} waqtında tómendegi sánelerde bánt: {conflict_str}. "
+                f"Ushbu waqıtta bos basqa qániyge(ler): {alt_list}.",
+                "warning"
+            )
+        else:
+            flash(
+                f"Qániyge {target_specialist.name} {time_str} waqtında tómendegi sánelerde bánt: {conflict_str}. "
+                f"Bul waqıtta basqa qániygeler de bánt, iltimas basqa bos waqıt tańlań.",
+                "danger"
+            )
+        return redirect(url_for('dashboard', specialist_id=sp_id))
+
+    new_apps = []
+    for d in target_dates:
+        app_obj = Appointment(
+            user_id=current_user.id,
+            specialist_id=sp_id,
+            child_name=child_name,
+            child_age=age,
+            phone=current_user.phone or "Kiritilmegen",
+            date_str=d,
+            time_str=time_str,
+            status='Aktiv'
+        )
+        new_apps.append(app_obj)
+
+    db.session.add_all(new_apps)
     db.session.commit()
-    flash("Qabılǵa jazıldıńız!", "success")
+    plan_name = "Bir kúnlik" if booking_type == 'single' else ("Bir háptelik" if booking_type == 'weekly' else "Bir aylıq")
+    flash(f"{plan_name} rejesi boyınsha {len(target_dates)} kún ushın qabılǵa tabıslı jazıldıńız ({time_str})!", "success")
     return redirect(url_for('dashboard'))
+
+@app.route('/update-appointment-status/<int:app_id>', methods=['POST'])
+@login_required
+def update_appointment_status(app_id):
+    new_status = request.form.get('status', '').strip()
+    valid_statuses = ['Aktiv', 'Nátiyjeli juwmaqlandı', 'Kelmadi', 'Biykar etildi']
+    if new_status not in valid_statuses:
+        flash("Nadurıs status!", "danger")
+        return redirect(request.referrer or url_for('dashboard'))
+
+    app_item = db.session.get(Appointment, app_id)
+    if not app_item:
+        flash("Qabıl tabılmadı!", "warning")
+        return redirect(request.referrer or url_for('dashboard'))
+
+    if current_user.role == 'admin':
+        app_item.status = new_status
+        db.session.commit()
+        flash(f"Qabıl #{app_id} statusı '{new_status}' etip belgilendi!", "success")
+        return redirect(request.referrer or url_for('admin_panel'))
+    elif current_user.role == 'specialist' and app_item.specialist_id == current_user.specialist_id:
+        app_item.status = new_status
+        db.session.commit()
+        flash(f"Qabıl statusı '{new_status}' etip belgilendi!", "success")
+        return redirect(request.referrer or url_for('dashboard'))
+    else:
+        flash("Status ózgertiwge ruxsat joq!", "danger")
+        return redirect(url_for('dashboard'))
 
 @app.route('/add-progress', methods=['POST'])
 @login_required
@@ -411,12 +564,23 @@ def chat():
 
     contact_users = list({u.id: u for u in contact_users if u is not None}.values())
 
+    # Attach unread count and latest message for Telegram-style indicators
+    for u in contact_users:
+        u.unread_from_user = ChatMessage.query.filter_by(
+            sender_id=u.id, receiver_id=current_user.id, is_read=False
+        ).count()
+        last_m = ChatMessage.query.filter(
+            ((ChatMessage.sender_id == current_user.id) & (ChatMessage.receiver_id == u.id)) |
+            ((ChatMessage.sender_id == u.id) & (ChatMessage.receiver_id == current_user.id))
+        ).order_by(ChatMessage.created_at.desc()).first()
+        u.last_message = last_m
+
     if request.method == 'POST':
         msg_text = request.form.get('message', '').strip()
         receiver_id = request.form.get('receiver_id')
         allowed_ids = [u.id for u in contact_users]
         if msg_text and receiver_id and int(receiver_id) in allowed_ids:
-            msg = ChatMessage(sender_id=current_user.id, receiver_id=int(receiver_id), message=msg_text)
+            msg = ChatMessage(sender_id=current_user.id, receiver_id=int(receiver_id), message=msg_text, is_read=False)
             db.session.add(msg)
             db.session.commit()
         return redirect(url_for('chat', user_id=receiver_id))
@@ -426,12 +590,44 @@ def chat():
     messages = []
     if selected_user_id and int(selected_user_id) in [u.id for u in contact_users]:
         active_chat_user = db.session.get(User, int(selected_user_id))
+        # Mark all messages from active_chat_user as read
+        ChatMessage.query.filter_by(
+            sender_id=active_chat_user.id, receiver_id=current_user.id, is_read=False
+        ).update({'is_read': True})
+        db.session.commit()
+
         messages = ChatMessage.query.filter(
             ((ChatMessage.sender_id == current_user.id) & (ChatMessage.receiver_id == active_chat_user.id)) |
             ((ChatMessage.sender_id == active_chat_user.id) & (ChatMessage.receiver_id == current_user.id))
         ).order_by(ChatMessage.created_at.asc()).all()
 
     return render_template('chat.html', contacts=contact_users, active_user=active_chat_user, messages=messages)
+
+@app.route('/api/chat/messages/<int:target_user_id>')
+@login_required
+def api_chat_messages(target_user_id):
+    target = db.session.get(User, target_user_id)
+    if not target:
+        return jsonify({'messages': []})
+
+    ChatMessage.query.filter_by(
+        sender_id=target.id, receiver_id=current_user.id, is_read=False
+    ).update({'is_read': True})
+    db.session.commit()
+
+    msgs = ChatMessage.query.filter(
+        ((ChatMessage.sender_id == current_user.id) & (ChatMessage.receiver_id == target.id)) |
+        ((ChatMessage.sender_id == target.id) & (ChatMessage.receiver_id == current_user.id))
+    ).order_by(ChatMessage.created_at.asc()).all()
+
+    result = [{
+        'id': m.id,
+        'sender_id': m.sender_id,
+        'is_me': m.sender_id == current_user.id,
+        'message': m.message,
+        'time': m.created_at.strftime('%H:%M')
+    } for m in msgs]
+    return jsonify({'messages': result})
 
 @app.route('/add-review', methods=['POST'])
 @login_required
@@ -447,6 +643,7 @@ def add_review():
 @app.route('/admin')
 @login_required
 def admin_panel():
+    auto_update_expired_appointments()
     if current_user.role != 'admin': return redirect(url_for('index'))
     appointments = Appointment.query.order_by(Appointment.id.desc()).all()
     specialists = Specialist.query.all()

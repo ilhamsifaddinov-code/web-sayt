@@ -90,6 +90,9 @@
         </a>
         <a href="{{ url_for('chat') }}" class="nav-item px-3.5 py-1.5 rounded-full flex items-center gap-1.5 text-sky-700 dark:text-sky-400 font-bold transition-colors duration-300">
           <i data-lucide="messages-square" class="w-4 h-4 text-sky-600 dark:text-sky-400"></i> <span data-i18n="nav_chat">Jeke Chat</span>
+          {% if total_unread_chats > 0 %}
+            <span class="ml-0.5 px-1.5 py-0.5 text-[9px] font-black bg-rose-500 text-white rounded-full shadow-sm animate-pulse">{{ total_unread_chats }}</span>
+          {% endif %}
         </a>
       </nav>
 
@@ -132,8 +135,14 @@
       </div>
       <span data-i18n="mob_cab">Kabinet</span>
     </a>
-    <a href="{{ url_for('chat') }}" class="flex flex-col items-center gap-1 hover:text-sky-600 dark:hover:text-sky-400 transition-colors">
-      <i data-lucide="message-circle" class="w-5 h-5"></i> <span data-i18n="mob_chat">Chat</span>
+    <a href="{{ url_for('chat') }}" class="relative flex flex-col items-center gap-1 hover:text-sky-600 dark:hover:text-sky-400 transition-colors">
+      <div class="relative">
+        <i data-lucide="message-circle" class="w-5 h-5"></i>
+        {% if total_unread_chats > 0 %}
+          <span class="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 flex items-center justify-center text-[9px] font-black bg-rose-500 text-white rounded-full shadow-sm animate-pulse">{{ total_unread_chats }}</span>
+        {% endif %}
+      </div>
+      <span data-i18n="mob_chat">Chat</span>
     </a>
   </div>
 
