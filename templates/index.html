@@ -116,7 +116,7 @@
               <span class="text-slate-400 text-[10px] block" data-i18n="sp_price_label">Qabıl bahası:</span>
               <span class="font-black text-sky-700 dark:text-sky-400 text-xs">{{ "{:,.0f}".format(sp.price) }} so'm</span>
             </div>
-            <a href="{% if current_user.is_authenticated %}{{ url_for('dashboard', specialist_id=sp.id) }}{% else %}{{ url_for('login') }}{% endif %}"
+            <a href="{% if current_user.is_authenticated %}{{ url_for('dashboard', specialist_id=sp.id) }}{% else %}{{ url_for('login', next=url_for('dashboard', specialist_id=sp.id)) }}{% endif %}"
                class="bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs px-4 py-2 rounded-full transition-all flex items-center gap-1 active:scale-95">
               <span data-i18n="sp_book_btn">Jazılıw</span> <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
             </a>
@@ -203,6 +203,19 @@
             </div>
           </form>
         </div>
+      {% else %}
+        <div class="p-6 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-700 text-center flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div class="text-left">
+            <h4 class="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
+              <i data-lucide="message-circle" class="w-4 h-4 text-sky-600"></i> <span data-i18n="rev_auth_prompt">Siz de óz pikirińizdi qaldırmaqshısız ba?</span>
+            </h4>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1" data-i18n="rev_auth_sub">Pikir qaldırıw ushın kabinetińizge kiriń yamasa dizimnen ótiń.</p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <a href="{{ url_for('login', next=url_for('index') + '#reviews') }}" class="px-4 py-2 rounded-full border border-sky-600 text-sky-600 hover:bg-sky-50 dark:hover:bg-slate-800 font-bold text-xs transition-colors" data-i18n="nav_login">Kiriw</a>
+            <a href="{{ url_for('register') }}" class="px-4 py-2 rounded-full bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs transition-colors shadow-sm" data-i18n="nav_register">Dizimnen ótiw</a>
+          </div>
+        </div>
       {% endif %}
     </div>
 
@@ -223,6 +236,61 @@
           <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
             <span class="font-bold text-xs text-slate-900 dark:text-white">— {{ rev.author_name }}</span>
             <span class="text-[10px] text-slate-400">{{ rev.created_at.strftime('%d.%m.%Y') }}</span>
+          </div>
+        </div>
+      {% else %}
+        <div class="p-6 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-700 flex flex-col justify-between shadow-sm">
+          <div>
+            <div class="text-amber-400 text-xs mb-3 flex items-center gap-1">
+              <i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i>
+              <i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i>
+              <i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i>
+              <i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i>
+              <i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i>
+            </div>
+            <p class="text-slate-700 dark:text-slate-300 text-xs sm:text-sm italic leading-relaxed">
+              "Balam 4 jasqa shekem 'R' hám 'L' dawısların ayta almaytuǵın edi. Aygul qániygemiz benen 2 ay shınıǵıwdan soń anıq sóylewdi basladı. Sheksiz minnetdarmız!"
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+            <span class="font-bold text-xs text-slate-900 dark:text-white">— Gulbahar A.</span>
+            <span class="text-[10px] text-slate-400">Nókis</span>
+          </div>
+        </div>
+        <div class="p-6 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-700 flex flex-col justify-between shadow-sm">
+          <div>
+            <div class="text-amber-400 text-xs mb-3 flex items-center gap-1">
+              <i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i>
+              <i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i>
+              <i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i>
+              <i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i>
+              <i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i>
+            </div>
+            <p class="text-slate-700 dark:text-slate-300 text-xs sm:text-sm italic leading-relaxed">
+              "Rustam aǵaǵa kóp raxmet. Balamızdıń keshikken sóylewi boyınsha qızıqlı oyınlar arqalı shınıǵıwlar ótkerildi, házir qatar-quralasları menen erkin sóylesedi."
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+            <span class="font-bold text-xs text-slate-900 dark:text-white">— Azamat B.</span>
+            <span class="text-[10px] text-slate-400">Xojeli</span>
+          </div>
+        </div>
+        <div class="p-6 bg-slate-50 dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-700 flex flex-col justify-between shadow-sm">
+          <div>
+            <div class="text-amber-400 text-xs mb-3 flex items-center gap-1">
+              <i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i>
+              <i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i>
+              <i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i>
+              <i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i>
+              <i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-400"></i>
+            </div>
+            <p class="text-slate-700 dark:text-slate-300 text-xs sm:text-sm italic leading-relaxed">
+              "Oray xızmetkerlerine úlken raxmet! Júdá qolaylı orın, zamanagóy pedagogikalıq metodika hám qolaylı jeke kabinet. Hár bir ata-anaǵa usınıs etemen."
+            </p>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+            <span class="font-bold text-xs text-slate-900 dark:text-white">— Dilfuza X.</span>
+            <span class="text-[10px] text-slate-400">Nókis</span>
           </div>
         </div>
       {% endfor %}

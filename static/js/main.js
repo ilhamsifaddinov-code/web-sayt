@@ -38,17 +38,18 @@ document.addEventListener("DOMContentLoaded", function () {
   if (nav && indicator) {
     navItems.forEach(item => {
       item.addEventListener('mouseenter', (e) => {
-        const rect = e.target.getBoundingClientRect();
+        const current = e.currentTarget;
+        const rect = current.getBoundingClientRect();
         const navRect = nav.getBoundingClientRect();
         indicator.style.width = `${rect.width}px`;
         indicator.style.height = `${rect.height}px`;
         indicator.style.transform = `translate(${rect.left - navRect.left}px, ${rect.top - navRect.top}px)`;
         indicator.style.opacity = '1';
         
-        // Change icon and text color to white securely
-        e.target.classList.add('text-white');
-        e.target.classList.remove('text-slate-600', 'dark:text-slate-200');
-        const icon = e.target.querySelector('i');
+        current.setAttribute('data-prev-color', current.className);
+        current.classList.add('text-white');
+        current.classList.remove('text-slate-600', 'dark:text-slate-200', 'text-sky-700', 'dark:text-sky-400');
+        const icon = current.querySelector('i');
         if (icon) {
             icon.setAttribute('data-original-color', icon.className);
             icon.className = 'w-4 h-4 text-white lucide';
@@ -57,9 +58,11 @@ document.addEventListener("DOMContentLoaded", function () {
       
       item.addEventListener('mouseleave', (e) => {
         indicator.style.opacity = '0';
-        e.target.classList.remove('text-white');
-        e.target.classList.add('text-slate-600', 'dark:text-slate-200');
-        const icon = e.target.querySelector('i');
+        const current = e.currentTarget;
+        if (current.hasAttribute('data-prev-color')) {
+            current.className = current.getAttribute('data-prev-color');
+        }
+        const icon = current.querySelector('i');
         if (icon && icon.hasAttribute('data-original-color')) {
             icon.className = icon.getAttribute('data-original-color');
         }
@@ -71,15 +74,31 @@ document.addEventListener("DOMContentLoaded", function () {
   const countrySelect = document.getElementById('country_code');
   const phoneInput = document.getElementById('phone_number');
 
+  const phonePlaceholders = {
+    '+998': '901234567',
+    '+7': '9123456789',
+    '+996': '555123456',
+    '+993': '65123456',
+    '+992': '921234567',
+    '+1': '2025550123',
+    '+44': '7911123456',
+    '+90': '5321234567',
+    '+82': '1012345678'
+  };
+
   if (countrySelect && phoneInput) {
     countrySelect.addEventListener('change', function() {
       phoneInput.value = '';
+      const code = this.value;
+      if (phonePlaceholders[code]) {
+        phoneInput.placeholder = phonePlaceholders[code];
+      }
       phoneInput.focus();
     });
 
     phoneInput.addEventListener('input', function() {
       this.value = this.value.replace(/\D/g, ''); // Tek sanlar
-      const maxLen = parseInt(countrySelect.options[countrySelect.selectedIndex].getAttribute('data-len'));
+      const maxLen = parseInt(countrySelect.options[countrySelect.selectedIndex].getAttribute('data-len')) || 9;
       if (this.value.length > maxLen) {
         this.value = this.value.substring(0, maxLen);
       }
@@ -89,7 +108,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const form = phoneInput.closest('form');
     if (form) {
       form.addEventListener('submit', function(e) {
-        const maxLen = parseInt(countrySelect.options[countrySelect.selectedIndex].getAttribute('data-len'));
+        const maxLen = parseInt(countrySelect.options[countrySelect.selectedIndex].getAttribute('data-len')) || 9;
         if (phoneInput.value.length !== maxLen) {
           e.preventDefault();
           const dict = translations[localStorage.getItem('site_lang') || 'qr'];
@@ -99,6 +118,22 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
   }
+
+  // ================= 3.1. PAROLDI KÓRSETIW / JASIHIW (SHOW / HIDE PASSWORD) =================
+  document.querySelectorAll('.toggle-password-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const targetId = this.getAttribute('data-target');
+      const input = document.getElementById(targetId);
+      if (!input) return;
+      const isPassword = input.getAttribute('type') === 'password';
+      input.setAttribute('type', isPassword ? 'text' : 'password');
+      const icon = this.querySelector('i');
+      if (icon) {
+        icon.setAttribute('data-lucide', isPassword ? 'eye-off' : 'eye');
+        if (window.lucide) window.lucide.createIcons();
+      }
+    });
+  });
 
   // ================= 4. TOLÍQ TILLER (QR, UZ, RU, EN) =================
   const translations = {
@@ -153,6 +188,8 @@ document.addEventListener("DOMContentLoaded", function () {
       rev_placeholder: "Balańızdıń erisken nátiyjeleri haqqında óz pikirińizdi jazıp qaldırıń...",
       rev_rating_label: "Baha:",
       rev_send_btn: "Jiberiw",
+      rev_auth_prompt: "Siz de óz pikirińizdi qaldırmaqshısız ba?",
+      rev_auth_sub: "Pikir qaldırıw ushın kabinetińizge kiriń yamasa dizimnen ótiń.",
       footer_desc: "Balańız anıq hám ráwan sóylewdi biz benen birge úyrensin. Nókis qalasındaǵı joqarı tájiriybeli qániygeler.",
       footer_addr_t: "Mánzil & Baylanıs",
       footer_addr: "Nókis qalası, Ernazar Alakóz kóshesi, 45-jay",
@@ -267,6 +304,8 @@ document.addEventListener("DOMContentLoaded", function () {
       rev_placeholder: "Farzandingiz erishgan natijalar haqida yozing...",
       rev_rating_label: "Baho:",
       rev_send_btn: "Yuborish",
+      rev_auth_prompt: "Siz ham o'z fikringizni qoldirmoqchimisiz?",
+      rev_auth_sub: "Fikr qoldirish uchun kabinetingizga kiring yoki ro'yxatdan o'ting.",
       footer_desc: "Farzandingiz ravon va chiroyli gapirishni o'rgansin. Nukusdagi tajribali mutaxassislar.",
       footer_addr_t: "Manzil & Aloqa",
       footer_addr: "Nukus shahri, Ernazar Olako'z ko'chasi, 45-uy",
@@ -381,6 +420,8 @@ document.addEventListener("DOMContentLoaded", function () {
       rev_placeholder: "Расскажите об успехах вашего ребенка...",
       rev_rating_label: "Оценка:",
       rev_send_btn: "Отправить",
+      rev_auth_prompt: "Хотите оставить свой отзыв?",
+      rev_auth_sub: "Чтобы оставить отзыв, войдите в кабинет или зарегистрируйтесь.",
       footer_desc: "Опытные логопеды в Нукусе.",
       footer_addr_t: "Адрес & Контакты",
       footer_addr: "г. Нукус, ул. Ерназар Алакоз, 45",
@@ -495,6 +536,8 @@ document.addEventListener("DOMContentLoaded", function () {
       rev_placeholder: "Share your child's achievements...",
       rev_rating_label: "Rating:",
       rev_send_btn: "Submit",
+      rev_auth_prompt: "Would you like to leave a review?",
+      rev_auth_sub: "Log in or sign up to leave a review.",
       footer_desc: "Empower your child to speak fluently. Trusted specialists in Nukus.",
       footer_addr_t: "Address & Contact",
       footer_addr: "Nukus city, Ernazar Alakoz str, 45",

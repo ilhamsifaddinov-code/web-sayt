@@ -179,9 +179,37 @@ def seed_database():
     if Specialist.query.count() == 0:
         s1 = Specialist(name="Dilnoza Alimbetova", age=32, experience="8 jıl", success_rate=95, price=50000, image="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=600", description="Duduqlanıw hám tutıǵıw yamasa al-analıq waqtındaǵı logopedik xızmet.")
         s2 = Specialist(name="Rustam Joldasbaev", age=38, experience="12 jıl", success_rate=98, price=70000, image="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=600", description="Keshikken sóylewdi rawajlandırıw, autizm belgileri bar balalar menen islesiw.")
-        s3 = Specialist(name="Aygul Turemuratova", age=29, experience="5 jıl", success_rate=92, price=45000, image="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRn5NNkGjYrMy-f7QSfWKJ9SgrNCD6YU736tPBt5zXRwmXUa6JZS3Zlrbo&s=10", description="Artikulyaciyalıq gimnastika, 'R' hám 'L' háriplerin anıq aytıwdı úyretiw.")
-        s4 = Specialist(name="Zarina Qıdırbaeva", age=35, experience="10 jıl", success_rate=96, price=60000, image="https://media.gettyimages.com/id/1301595548/photo/female-doctor-stock-photo.jpg?s=612x612&w=gi&k=20&c=uYSCSyeDaG4DLyvV8SrPES0u-u6JjMG-pFgDMHqAEoc=", description="Kishi jastaǵı balalarda sóylew qorqınıshın jeńiw hám logonevrozdi emlew.")
+        s3 = Specialist(name="Aygul Turemuratova", age=29, experience="5 jıl", success_rate=92, price=45000, image="https://images.unsplash.com/photo-1594824813682-14066c0d832b?w=600", description="Artikulyaciyalıq gimnastika, 'R' hám 'L' háriplerin anıq aytıwdı úyretiw.")
+        s4 = Specialist(name="Zarina Qıdırbaeva", age=35, experience="10 jıl", success_rate=96, price=60000, image="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=600", description="Kishi jastaǵı balalarda sóylew qorqınıshın jeńiw hám logonevrozdi emlew.")
         db.session.add_all([s1, s2, s3, s4])
+
+    for sp in Specialist.query.all():
+        if sp.image and 'encrypted-tbn0' in sp.image:
+            sp.image = 'https://images.unsplash.com/photo-1594824813682-14066c0d832b?w=600'
+        elif sp.image and 'gettyimages' in sp.image:
+            sp.image = 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=600'
+
+    if Review.query.count() == 0 and admin:
+        r1 = Review(
+            user_id=admin.id,
+            author_name="Gulbahar Allanazarova",
+            rating=5,
+            content="Balam 4 jasqa shekem 'R' hám 'L' dawısların ayta almaytuǵın edi. Aygul qániygemiz benen 2 ay shınıǵıwdan soń anıq sóylewdi basladı. Sheksiz minnetdarmız!"
+        )
+        r2 = Review(
+            user_id=admin.id,
+            author_name="Azamat Berdimuratov",
+            rating=5,
+            content="Rustam aǵaǵa kóp raxmet. Balamızdıń keshikken sóylewi boyınsha qızıqlı oyınlar arqalı shınıǵıwlar ótkerildi, házir qatar-quralasları menen erkin sóylesedi."
+        )
+        r3 = Review(
+            user_id=admin.id,
+            author_name="Dilfuza Xojamuratova",
+            rating=5,
+            content="Oray xızmetkerlerine úlken raxmet! Júdá qolaylı orın, zamanagóy pedagogikalıq metodika hám qolaylı jeke kabinet. Hár bir ata-anaǵa usınıs etemen."
+        )
+        db.session.add_all([r1, r2, r3])
+
     db.session.commit()
 
 @app.route('/')
@@ -223,6 +251,7 @@ def register():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated: return redirect(url_for('dashboard'))
+    next_page = request.args.get('next')
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '').strip()
@@ -230,9 +259,42 @@ def login():
         if user and user.check_password(password):
             login_user(user)
             if user.role == 'admin': return redirect(url_for('admin_panel'))
+            if next_page and next_page.startswith('/'):
+                return redirect(next_page)
             return redirect(url_for('dashboard'))
         flash("Login yamasa parol nadurıs!", "danger")
     return render_template('login.html')
+
+@app.route('/favicon.ico')
+def favicon():
+    return app.send_static_file('favicon.svg')
+
+@app.route('/robots.txt')
+def robots():
+    content = "User-agent: *\nAllow: /\nSitemap: https://logoped-five.vercel.app/sitemap.xml\n"
+    return content, 200, {'Content-Type': 'text/plain'}
+
+@app.route('/sitemap.xml')
+def sitemap():
+    content = """<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://logoped-five.vercel.app/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://logoped-five.vercel.app/login</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://logoped-five.vercel.app/register</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+</urlset>"""
+    return content, 200, {'Content-Type': 'application/xml'}
 
 @app.route('/logout')
 @login_required
