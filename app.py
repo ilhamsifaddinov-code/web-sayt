@@ -122,8 +122,8 @@ class Appointment(db.Model):
     child_age = db.Column(db.Integer, nullable=False)
     phone = db.Column(db.String(30), nullable=False)
     date_str = db.Column(db.String(20), nullable=False)
-    time_str = db.Column(db.String(20), nullable=False)
-    status = db.Column(db.String(20), default='Aktiv')
+    time_str = db.Column(db.String(50), nullable=False)
+    status = db.Column(db.String(100), default='Aktiv')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     user = db.relationship('User', backref='appointments', foreign_keys=[user_id])
     specialist = db.relationship('Specialist', backref='appointments')
@@ -164,7 +164,11 @@ class Setting(db.Model):
 
 @login_manager.user_loader
 def load_user(user_id):
-    return db.session.get(User, int(user_id))
+    try:
+        return db.session.get(User, int(user_id))
+    except Exception:
+        db.session.rollback()
+        return None
 
 STANDARD_SLOTS = ["09:00 - 10:00", "10:00 - 11:00", "11:00 - 12:00", "14:00 - 15:00", "15:00 - 16:00", "16:00 - 17:00", "17:00 - 18:00"]
 
@@ -172,6 +176,16 @@ def seed_database():
     db.create_all()
     try:
         db.session.execute(db.text("ALTER TABLE chat_message ADD COLUMN IF NOT EXISTS is_read BOOLEAN DEFAULT FALSE;"))
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+    try:
+        db.session.execute(db.text("ALTER TABLE appointment ALTER COLUMN status TYPE VARCHAR(100);"))
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+    try:
+        db.session.execute(db.text("ALTER TABLE appointment ALTER COLUMN time_str TYPE VARCHAR(50);"))
         db.session.commit()
     except Exception as e:
         db.session.rollback()
@@ -238,6 +252,7 @@ def auto_update_expired_appointments():
         if updated:
             db.session.commit()
     except Exception as e:
+        db.session.rollback()
         app.logger.warning("Auto update expired appointments error: %s", e)
 
 @app.context_processor
@@ -247,6 +262,7 @@ def inject_global_data():
         try:
             unread_count = ChatMessage.query.filter_by(receiver_id=current_user.id, is_read=False).count()
         except Exception:
+            db.session.rollback()
             unread_count = 0
     return {'total_unread_chats': unread_count}
 
@@ -347,7 +363,7 @@ def dashboard():
     if current_user.role == 'admin': return redirect(url_for('admin_panel'))
     if current_user.role == 'specialist':
         my_appointments = Appointment.query.filter_by(specialist_id=current_user.specialist_id).order_by(Appointment.date_str.desc()).all()
-        unique_clients = {app.user_id: app for app in my_appointments if app.status in ('Aktiv', 'Nátiyjeli juwmaqlandı')}.values()
+        unique_clients = list({app.user_id: app for app in my_appointments if app.status in ('Aktiv', 'Nátiyjeli juwmaqlandı')}.values())
         return render_template('dashboard_specialist.html', appointments=my_appointments, clients=unique_clients)
     
     specialists = Specialist.query.filter_by(is_active=True).all()
