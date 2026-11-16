@@ -561,6 +561,69 @@ def cancel_my_appointment(app_id):
     flash("Qabıl biykar etildi.", "info")
     return redirect(url_for('dashboard'))
 
+@app.route('/delete-appointment/<int:app_id>', methods=['POST'])
+@login_required
+def delete_appointment(app_id):
+    app_item = db.session.get(Appointment, app_id)
+    if not app_item:
+        flash("Qabıl tabılmadı!", "warning")
+        return redirect(request.referrer or url_for('dashboard'))
+
+    allowed_statuses = ['Nátiyjeli juwmaqlandı', 'Kelmadi', 'Biykar etildi']
+    if app_item.status not in allowed_statuses:
+        flash("Tek ǵana juwmaqlanǵan, kelmegen yamasa biykar etilgen qabıllardı óshiriw múmkin!", "warning")
+        return redirect(request.referrer or url_for('dashboard'))
+
+    can_delete = False
+    if current_user.role == 'admin':
+        can_delete = True
+    elif current_user.role == 'specialist' and app_item.specialist_id == current_user.specialist_id:
+        can_delete = True
+    elif current_user.role == 'user' and app_item.user_id == current_user.id:
+        can_delete = True
+
+    if not can_delete:
+        flash("Qabıldı óshiriwge ruxsat joq!", "danger")
+        return redirect(request.referrer or url_for('dashboard'))
+
+    try:
+        db.session.delete(app_item)
+        db.session.commit()
+        flash("Qabıl tabıslı óshirildi!", "success")
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error("Error deleting appointment: %s", e)
+        flash("Qabıldı óshiriwde qátelik júz berdi!", "danger")
+
+    return redirect(request.referrer or url_for('dashboard'))
+
+@app.route('/clear-finished-appointments', methods=['POST'])
+@login_required
+def clear_finished_appointments():
+    allowed_statuses = ['Nátiyjeli juwmaqlandı', 'Kelmadi', 'Biykar etildi']
+    try:
+        if current_user.role == 'admin':
+            deleted = Appointment.query.filter(Appointment.status.in_(allowed_statuses)).delete(synchronize_session=False)
+        elif current_user.role == 'specialist':
+            deleted = Appointment.query.filter(
+                Appointment.specialist_id == current_user.specialist_id,
+                Appointment.status.in_(allowed_statuses)
+            ).delete(synchronize_session=False)
+        else:
+            deleted = Appointment.query.filter(
+                Appointment.user_id == current_user.id,
+                Appointment.status.in_(allowed_statuses)
+            ).delete(synchronize_session=False)
+
+        db.session.commit()
+        flash(f"{deleted} dana juwmaqlanǵan / biykar etilgen qabıl óshirildi!", "success")
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error("Error clearing appointments: %s", e)
+        flash("Qabıllardı tazalawda qátelik júz berdi!", "danger")
+
+    return redirect(request.referrer or url_for('dashboard'))
+
 @app.route('/chat', methods=['GET', 'POST'])
 @login_required
 def chat():
